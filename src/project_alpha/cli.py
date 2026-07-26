@@ -112,6 +112,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         "fold_pass_fraction": result.fold_pass_fraction,
         "positive_fold_fraction": result.positive_fold_fraction,
         "aggregate_performance": asdict(result.aggregate_performance),
+        "cost_stress": {
+            "passed": result.cost_stress_report.decision.passed,
+            "pass_fraction": result.cost_stress_report.pass_fraction,
+            "reasons": result.cost_stress_report.decision.reasons,
+            "scenarios": [
+                {
+                    "cost_multiplier": scenario.multiplier,
+                    "passed": scenario.decision.passed,
+                    "performance": asdict(scenario.performance),
+                    "reasons": scenario.decision.reasons,
+                }
+                for scenario in result.cost_stress_report.scenarios
+            ],
+        },
         "folds": [
             {
                 "train_end": str(fold.train_end),
