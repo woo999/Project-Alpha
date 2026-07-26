@@ -43,7 +43,9 @@ python -m project_alpha.cli data\prices_5m.csv `
 The JSON report states `mode: research_only`, the aggregate out-of-sample
 metrics, each fold's selected parameters, and every rejection reason. It also
 reprices the same unseen trades at 1.0x, 1.5x, and 2.0x the assumed transaction
-costs; by default, every cost scenario must pass.
+costs; by default, every cost scenario must pass. A separate frictionless
+buy-and-hold comparison reports excess return and improvements in drawdown,
+Sharpe, and Calmar without yet applying an arbitrary benchmark gate.
 
 Research results are not guarantees of future returns. Transaction costs,
 slippage, liquidity, and out-of-sample validation must be included before any
