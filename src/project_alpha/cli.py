@@ -112,6 +112,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "fold_pass_fraction": result.fold_pass_fraction,
         "positive_fold_fraction": result.positive_fold_fraction,
         "aggregate_performance": asdict(result.aggregate_performance),
+        "benchmark": asdict(result.benchmark_report),
         "cost_stress": {
             "passed": result.cost_stress_report.decision.passed,
             "pass_fraction": result.cost_stress_report.pass_fraction,
