@@ -33,3 +33,8 @@ def test_cli_emits_machine_readable_research_report(tmp_path, capsys):
     assert report["fold_count"] == 2
     assert isinstance(report["passed"], bool)
     assert report["aggregate_performance"]["observations"] == 200
+    assert [item["cost_multiplier"] for item in report["cost_stress"]["scenarios"]] == [
+        1.0,
+        1.5,
+        2.0,
+    ]
