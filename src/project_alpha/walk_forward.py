@@ -7,6 +7,11 @@ from dataclasses import dataclass, replace
 import pandas as pd
 
 from project_alpha.backtest import BacktestConfig
+from project_alpha.cost_stress import (
+    CostStressCriteria,
+    CostStressReport,
+    evaluate_cost_stress,
+)
 from project_alpha.data_quality import (
     DataQualityPolicy,
     DataQualityReport,
@@ -48,6 +53,7 @@ class WalkForwardValidationResult:
     aggregate_result: pd.DataFrame
     aggregate_performance: PerformanceMetrics
     aggregate_decision: GateDecision
+    cost_stress_report: CostStressReport
     fold_pass_fraction: float
     positive_fold_fraction: float
     decision: GateDecision
@@ -95,6 +101,7 @@ def run_walk_forward_validation(
     acceptance_criteria: AcceptanceCriteria | None = None,
     stability_criteria: StabilityCriteria | None = None,
     walk_forward_criteria: WalkForwardCriteria | None = None,
+    cost_stress_criteria: CostStressCriteria | None = None,
 ) -> WalkForwardValidationResult:
     """Select on expanding history and evaluate only the next unseen segment."""
     rules = walk_forward_criteria or WalkForwardCriteria()
@@ -147,6 +154,13 @@ def run_walk_forward_validation(
         aggregate_performance,
         acceptance_criteria,
     )
+    cost_stress_report = evaluate_cost_stress(
+        aggregate_result,
+        periods_per_year=periods_per_year,
+        acceptance_criteria=acceptance_criteria,
+        stress_criteria=cost_stress_criteria,
+        trade_count=aggregate_performance.trades,
+    )
     fold_pass_fraction = sum(fold.decision.passed for fold in folds) / len(folds)
     positive_fold_fraction = (
         sum(fold.test_performance.total_return > 0.0 for fold in folds) / len(folds)
@@ -155,6 +169,10 @@ def run_walk_forward_validation(
     reasons = [
         f"aggregate: {reason}" for reason in aggregate_decision.reasons
     ]
+    reasons.extend(
+        f"cost_stress: {reason}"
+        for reason in cost_stress_report.decision.reasons
+    )
     if len(folds) < rules.minimum_folds:
         reasons.append(f"fold_count {len(folds)} < {rules.minimum_folds}")
     if fold_pass_fraction < rules.minimum_fold_pass_fraction:
@@ -175,6 +193,7 @@ def run_walk_forward_validation(
         aggregate_result=aggregate_result,
         aggregate_performance=aggregate_performance,
         aggregate_decision=aggregate_decision,
+        cost_stress_report=cost_stress_report,
         fold_pass_fraction=fold_pass_fraction,
         positive_fold_fraction=positive_fold_fraction,
         decision=decision,
