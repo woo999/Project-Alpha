@@ -24,11 +24,7 @@ class BacktestConfig:
 
 
 def run_long_only_sma(prices: pd.Series, config: BacktestConfig) -> pd.DataFrame:
-    """Backtest a long/cash SMA regime using next-bar execution.
-
-    The signal is shifted by one bar so today's close cannot trade at that same
-    close. Costs are charged whenever exposure changes.
-    """
+    """Backtest a long/cash SMA regime using next-bar execution."""
     config.validate()
     clean = pd.to_numeric(prices, errors="coerce").dropna().astype(float)
     if len(clean) <= config.slow_window:
@@ -41,12 +37,16 @@ def run_long_only_sma(prices: pd.Series, config: BacktestConfig) -> pd.DataFrame
     frame["slow_sma"] = frame["close"].rolling(config.slow_window).mean()
     frame["signal"] = (frame["fast_sma"] > frame["slow_sma"]).astype(float)
     frame["position"] = frame["signal"].shift(1).fillna(0.0)
-
     frame["asset_return"] = frame["close"].pct_change().fillna(0.0)
-    turnover = frame["position"].diff().abs().fillna(frame["position"].abs())
-    one_way_cost = config.fee_rate + config.slippage_rate
-    frame["cost"] = turnover * one_way_cost
-    frame["strategy_return"] = frame["position"] * frame["asset_return"] - frame["cost"]
+    frame["turnover"] = (
+        frame["position"].diff().abs().fillna(frame["position"].abs())
+    )
+    frame["cost"] = frame["turnover"] * (
+        config.fee_rate + config.slippage_rate
+    )
+    frame["strategy_return"] = (
+        frame["position"] * frame["asset_return"] - frame["cost"]
+    )
     frame["equity"] = (1.0 + frame["strategy_return"]).cumprod()
     frame["peak"] = frame["equity"].cummax()
     frame["drawdown"] = frame["equity"] / frame["peak"] - 1.0
