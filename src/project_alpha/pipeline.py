@@ -12,6 +12,13 @@ from project_alpha.data_quality import (
     DataQualityReport,
     validate_price_series,
 )
+from project_alpha.evaluation import (
+    AcceptanceCriteria,
+    GateDecision,
+    PerformanceMetrics,
+    calculate_performance_metrics,
+    evaluate_acceptance,
+)
 from project_alpha.validation import chronological_split
 
 
@@ -21,6 +28,8 @@ class HoldoutValidationResult:
     quality_report: DataQualityReport
     train_metrics: dict[str, float]
     test_metrics: dict[str, float]
+    test_performance: PerformanceMetrics
+    decision: GateDecision
     candidate_table: pd.DataFrame
     train_end: object
     test_start: object
@@ -49,7 +58,9 @@ def run_holdout_validation(
     train_fraction: float = 0.70,
     minimum_test_rows: int = 30,
     minimum_train_trades: float = 1.0,
+    periods_per_year: int = 252,
     quality_policy: DataQualityPolicy | None = None,
+    acceptance_criteria: AcceptanceCriteria | None = None,
 ) -> HoldoutValidationResult:
     """Select parameters on training data and evaluate once on holdout data."""
     if not candidates:
@@ -98,12 +109,19 @@ def run_holdout_validation(
     full_result = run_long_only_sma(clean, selected_config)
     test_result = _reset_equity(full_result.loc[test.index])
     test_metrics = summarize(test_result)
+    test_performance = calculate_performance_metrics(
+        test_result,
+        periods_per_year=periods_per_year,
+    )
+    decision = evaluate_acceptance(test_performance, acceptance_criteria)
 
     return HoldoutValidationResult(
         selected_config=selected_config,
         quality_report=quality_report,
         train_metrics=train_metrics,
         test_metrics=test_metrics,
+        test_performance=test_performance,
+        decision=decision,
         candidate_table=pd.DataFrame.from_records(records),
         train_end=train.index[-1],
         test_start=test.index[0],
