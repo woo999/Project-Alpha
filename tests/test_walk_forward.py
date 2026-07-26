@@ -70,6 +70,8 @@ def test_walk_forward_builds_unique_aggregate_out_of_sample_curve():
     assert len(result.aggregate_result) == 400
     assert result.aggregate_result.index.is_unique
     assert result.aggregate_performance.observations == 400
+    assert result.benchmark_report.benchmark_performance.observations == 400
+    assert result.benchmark_report.benchmark_name == "frictionless_buy_and_hold"
     assert result.aggregate_decision.passed
     assert result.decision.passed
     for previous, current in zip(result.folds, result.folds[1:]):
