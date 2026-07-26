@@ -3,6 +3,7 @@ import pandas as pd
 
 from project_alpha.backtest import BacktestConfig
 from project_alpha.data_quality import DataQualityPolicy
+from project_alpha.evaluation import AcceptanceCriteria
 from project_alpha.pipeline import run_holdout_validation
 
 
@@ -59,3 +60,37 @@ def test_changing_holdout_does_not_change_selected_parameters():
     )
 
     assert first.selected_config == second.selected_config
+
+
+def test_holdout_receives_explicit_acceptance_decision():
+    criteria = AcceptanceCriteria(
+        minimum_observations=100,
+        minimum_total_return=-1.0,
+        minimum_sharpe=-100.0,
+        minimum_calmar=-100.0,
+        minimum_profit_factor=0.0,
+        maximum_drawdown=0.50,
+        minimum_trades=0.0,
+    )
+
+    result = run_holdout_validation(
+        make_prices(),
+        candidates(),
+        quality_policy=DataQualityPolicy(minimum_rows=200),
+        acceptance_criteria=criteria,
+    )
+
+    assert result.decision.passed
+    assert result.decision.reasons == ()
+    assert result.test_performance.observations == 120
+
+
+def test_default_gate_rejects_holdout_with_too_few_trades():
+    result = run_holdout_validation(
+        make_prices(),
+        candidates(),
+        quality_policy=DataQualityPolicy(minimum_rows=200),
+    )
+
+    assert not result.decision.passed
+    assert any("trades" in reason for reason in result.decision.reasons)
