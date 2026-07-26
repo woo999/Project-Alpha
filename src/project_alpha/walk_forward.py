@@ -7,6 +7,7 @@ from dataclasses import dataclass, replace
 import pandas as pd
 
 from project_alpha.backtest import BacktestConfig
+from project_alpha.benchmark import BenchmarkReport, compare_buy_and_hold
 from project_alpha.cost_stress import (
     CostStressCriteria,
     CostStressReport,
@@ -53,6 +54,7 @@ class WalkForwardValidationResult:
     aggregate_result: pd.DataFrame
     aggregate_performance: PerformanceMetrics
     aggregate_decision: GateDecision
+    benchmark_report: BenchmarkReport
     cost_stress_report: CostStressReport
     fold_pass_fraction: float
     positive_fold_fraction: float
@@ -154,6 +156,11 @@ def run_walk_forward_validation(
         aggregate_performance,
         acceptance_criteria,
     )
+    benchmark_report = compare_buy_and_hold(
+        aggregate_result,
+        aggregate_performance,
+        periods_per_year=periods_per_year,
+    )
     cost_stress_report = evaluate_cost_stress(
         aggregate_result,
         periods_per_year=periods_per_year,
@@ -193,6 +200,7 @@ def run_walk_forward_validation(
         aggregate_result=aggregate_result,
         aggregate_performance=aggregate_performance,
         aggregate_decision=aggregate_decision,
+        benchmark_report=benchmark_report,
         cost_stress_report=cost_stress_report,
         fold_pass_fraction=fold_pass_fraction,
         positive_fold_fraction=positive_fold_fraction,
