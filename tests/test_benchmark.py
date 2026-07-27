@@ -1,6 +1,10 @@
 import pandas as pd
 
-from project_alpha.benchmark import compare_buy_and_hold
+from project_alpha.benchmark import (
+    BenchmarkCriteria,
+    compare_buy_and_hold,
+    evaluate_benchmark_acceptance,
+)
 from project_alpha.evaluation import calculate_performance_metrics
 
 
@@ -49,3 +53,39 @@ def test_cash_filter_can_show_drawdown_improvement_separately_from_return():
         report.excess_total_return
         == strategy.total_return - report.benchmark_performance.total_return
     )
+
+
+def test_benchmark_gate_rejects_lagging_strategy_without_risk_improvement():
+    result = make_result(
+        [0.0, 0.10, -0.05, 0.10],
+        [0.0, 0.02, -0.05, 0.02],
+        [1.0, 1.0, 1.0, 1.0],
+    )
+    report = compare_buy_and_hold(
+        result,
+        calculate_performance_metrics(result),
+    )
+
+    decision = evaluate_benchmark_acceptance(report)
+
+    assert not decision.passed
+    assert "neither beat buy-and-hold" in decision.reasons[0]
+
+
+def test_benchmark_gate_accepts_material_risk_adjusted_improvement():
+    result = make_result(
+        [0.0, 0.10, -0.30, 0.05],
+        [0.0, 0.08, 0.0, 0.0],
+        [1.0, 1.0, 0.0, 0.0],
+    )
+    report = compare_buy_and_hold(
+        result,
+        calculate_performance_metrics(result),
+    )
+
+    decision = evaluate_benchmark_acceptance(
+        report,
+        BenchmarkCriteria(minimum_drawdown_improvement=0.05),
+    )
+
+    assert decision.passed
