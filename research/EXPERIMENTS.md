@@ -13,6 +13,7 @@ and must not be described as a pristine future confirmation set for later ideas.
 | EXP-005 | 12.5% volatility target, rebalanced every 5 days with a 5 percentage-point no-trade buffer | One predeclared cost-control variant compared with daily rebalancing on user-supplied 0050 daily data | Rejected | Turnover fell 32.4% and drawdown improved from 25.8% to 22.1%, but Sharpe was 0.432, fold pass rate was 18.8%, and all cost-stress scenarios failed |
 | EXP-006 | 252-day absolute momentum, checked every 21 trading days | One predeclared monthly low-turnover rule; no parameter search | Rejected | 34.3% maximum drawdown, 0% fold pass rate, lagged buy-and-hold by 250.3 percentage points, and all cost-stress scenarios failed |
 | EXP-007 | 70% permanent 0050 core plus 30% 200-day trend sleeve, checked every 5 days | One predeclared core-protection rule; no weight or window search | Rejected | 30.1% maximum drawdown, 0% fold pass rate, Sharpe 0.002 below buy-and-hold, and all cost-stress scenarios failed |
+| EXP-008 | Equal-weight 50/100/200-day trend sleeves, checked every 5 days | One predeclared gradual-exposure rule; no parameter search | Rejected | 21.3% maximum drawdown, 31.25% fold pass rate, lower Sharpe than buy-and-hold, and all cost-stress scenarios failed |
 
 Passing an exploratory result would still not authorize live trading. A
 candidate must next survive paper trading on observations that were unavailable
