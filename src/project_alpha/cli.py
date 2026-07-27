@@ -12,6 +12,11 @@ from typing import Any, Sequence
 
 from project_alpha.backtest import BacktestConfig
 from project_alpha.data_io import load_price_csv
+from project_alpha.promotion import (
+    DataProvenance,
+    VALID_PRICE_BASES,
+    evaluate_promotion_readiness,
+)
 from project_alpha.walk_forward import run_walk_forward_validation
 
 
@@ -57,6 +62,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--fee-rate", type=float, default=0.001)
     parser.add_argument("--slippage-rate", type=float, default=0.0005)
     parser.add_argument(
+        "--price-basis",
+        choices=sorted(VALID_PRICE_BASES),
+        default="raw",
+        help="raw, split_adjusted, or dividend-adjusted total_return",
+    )
+    parser.add_argument("--source-name", default="user_supplied")
+    parser.add_argument("--symbol", default="unknown")
+    parser.add_argument(
         "--candidate",
         action="append",
         type=_candidate,
@@ -100,6 +113,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             test_size=args.test_size,
             periods_per_year=args.periods_per_year,
         )
+        provenance = DataProvenance(
+            source_name=args.source_name,
+            symbol=args.symbol,
+            price_basis=args.price_basis,
+        )
+        promotion = evaluate_promotion_readiness(
+            result.decision,
+            provenance,
+        )
     except (OSError, TypeError, ValueError) as exc:
         print(f"validation_error: {exc}", file=sys.stderr)
         return 2
@@ -113,6 +135,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         "positive_fold_fraction": result.positive_fold_fraction,
         "aggregate_performance": asdict(result.aggregate_performance),
         "benchmark": asdict(result.benchmark_report),
+        "promotion": {
+            "passed": promotion.passed,
+            "reasons": promotion.reasons,
+            "data_provenance": asdict(provenance),
+        },
         "cost_stress": {
             "passed": result.cost_stress_report.decision.passed,
             "pass_fraction": result.cost_stress_report.pass_fraction,
