@@ -1,0 +1,395 @@
+{
+  "research_status": "REJECTED",
+  "instrument_proxy": "FTSE TWSE Taiwan 50 Total Return Index",
+  "tradable_instrument_note": "Official market total-return index; not an executable 0050 ETF price series.",
+  "data_source": {
+    "publisher": "Taiwan Stock Exchange",
+    "endpoint": "https://www.twse.com.tw/rwd/zh/FTSE/TAI50I",
+    "retrieved_on": "2026-07-27",
+    "start": "2010-01-04",
+    "end": "2026-07-24",
+    "observations": 4065,
+    "field_used": "臺灣50報酬指數"
+  },
+  "validation_parameters": {
+    "minimum_training_observations": 756,
+    "test_observations_per_fold": 252,
+    "periods_per_year": 252,
+    "fee_rate_per_turnover": 0.001,
+    "slippage_rate_per_turnover": 0.0005,
+    "candidate_windows": [
+      [
+        20,
+        100
+      ],
+      [
+        20,
+        150
+      ],
+      [
+        50,
+        150
+      ],
+      [
+        50,
+        200
+      ],
+      [
+        100,
+        200
+      ]
+    ]
+  },
+  "result": {
+    "mode": "research_only",
+    "passed": false,
+    "reasons": [
+      "aggregate: calmar 0.407 < 0.500",
+      "aggregate: max_drawdown -0.280 < -0.200",
+      "cost_stress: 1.0x costs: calmar 0.407 < 0.500",
+      "cost_stress: 1.0x costs: max_drawdown -0.280 < -0.200",
+      "cost_stress: 1.5x costs: calmar 0.400 < 0.500",
+      "cost_stress: 1.5x costs: max_drawdown -0.281 < -0.200",
+      "cost_stress: 2.0x costs: calmar 0.393 < 0.500",
+      "cost_stress: 2.0x costs: max_drawdown -0.282 < -0.200",
+      "cost_stress: cost_stress_pass_fraction 0.00 < 1.00",
+      "fold_pass_fraction 0.00 < 0.60",
+      "positive_fold_fraction 0.46 < 0.60"
+    ],
+    "fold_count": 13,
+    "fold_pass_fraction": 0.0,
+    "positive_fold_fraction": 0.46153846153846156,
+    "aggregate_performance": {
+      "observations": 3276,
+      "total_return": 3.0648655230232675,
+      "annualized_return": 0.11390898316746156,
+      "annualized_volatility": 0.16211323794865362,
+      "sharpe": 0.7469299374545103,
+      "sortino": 1.0642249379215543,
+      "max_drawdown": -0.27964008395342355,
+      "calmar": 0.40734139954855,
+      "profit_factor": 1.1619173672397063,
+      "hit_rate": 0.5309458933437136,
+      "exposure": 0.782051282051282,
+      "trades": 33.0
+    },
+    "benchmark": {
+      "benchmark_name": "frictionless_buy_and_hold",
+      "benchmark_performance": {
+        "observations": 3276,
+        "total_return": 10.97983177884334,
+        "annualized_return": 0.2104803606914929,
+        "annualized_volatility": 0.19076595820548484,
+        "sharpe": 1.0971335864404828,
+        "sortino": 1.6233045372769193,
+        "max_drawdown": -0.3395537270164858,
+        "calmar": 0.6198735102715388,
+        "profit_factor": 1.2152278524531037,
+        "hit_rate": 0.535474006116208,
+        "exposure": 1.0,
+        "trades": 1.0
+      },
+      "excess_total_return": -7.914966255820073,
+      "drawdown_improvement": 0.05991364306306224,
+      "sharpe_improvement": -0.35020364898597245,
+      "calmar_improvement": -0.21253211072298883
+    },
+    "cost_stress": {
+      "passed": false,
+      "pass_fraction": 0.0,
+      "reasons": [
+        "1.0x costs: calmar 0.407 < 0.500",
+        "1.0x costs: max_drawdown -0.280 < -0.200",
+        "1.5x costs: calmar 0.400 < 0.500",
+        "1.5x costs: max_drawdown -0.281 < -0.200",
+        "2.0x costs: calmar 0.393 < 0.500",
+        "2.0x costs: max_drawdown -0.282 < -0.200",
+        "cost_stress_pass_fraction 0.00 < 1.00"
+      ],
+      "scenarios": [
+        {
+          "cost_multiplier": 1.0,
+          "passed": false,
+          "performance": {
+            "observations": 3276,
+            "total_return": 3.0648655230232675,
+            "annualized_return": 0.11390898316746156,
+            "annualized_volatility": 0.16211323794865362,
+            "sharpe": 0.7469299374545103,
+            "sortino": 1.0642249379215543,
+            "max_drawdown": -0.27964008395342355,
+            "calmar": 0.40734139954855,
+            "profit_factor": 1.1619173672397063,
+            "hit_rate": 0.5309458933437136,
+            "exposure": 0.782051282051282,
+            "trades": 33.0
+          },
+          "reasons": [
+            "calmar 0.407 < 0.500",
+            "max_drawdown -0.280 < -0.200"
+          ]
+        },
+        {
+          "cost_multiplier": 1.5,
+          "passed": false,
+          "performance": {
+            "observations": 3276,
+            "total_return": 2.9922432692683834,
+            "annualized_return": 0.11236537339904107,
+            "annualized_volatility": 0.16213002665506182,
+            "sharpe": 0.7383124382727251,
+            "sortino": 1.0517401065413094,
+            "max_drawdown": -0.28072296439519917,
+            "calmar": 0.4002713979639163,
+            "profit_factor": 1.1598315882464478,
+            "hit_rate": 0.5309458933437136,
+            "exposure": 0.782051282051282,
+            "trades": 33.0
+          },
+          "reasons": [
+            "calmar 0.400 < 0.500",
+            "max_drawdown -0.281 < -0.200"
+          ]
+        },
+        {
+          "cost_multiplier": 2.0,
+          "passed": false,
+          "performance": {
+            "observations": 3276,
+            "total_return": 2.920865338771866,
+            "annualized_return": 0.11082274474046194,
+            "annualized_volatility": 0.16215317103180124,
+            "sharpe": 0.7296681227966911,
+            "sortino": 1.0391962802936117,
+            "max_drawdown": -0.2818050303059565,
+            "calmar": 0.3932603496117205,
+            "profit_factor": 1.1577417090046835,
+            "hit_rate": 0.5301673803036201,
+            "exposure": 0.782051282051282,
+            "trades": 33.0
+          },
+          "reasons": [
+            "calmar 0.393 < 0.500",
+            "max_drawdown -0.282 < -0.200"
+          ]
+        }
+      ]
+    },
+    "folds": [
+      {
+        "train_end": "2013-01-10 00:00:00",
+        "test_start": "2013-01-11 00:00:00",
+        "selected_config": {
+          "fast_window": 20,
+          "slow_window": 100,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: total_return -0.0099 <= 0.0000",
+          "performance: sharpe -0.029 < 0.500",
+          "performance: calmar -0.075 < 0.500",
+          "performance: profit_factor 0.995 < 1.050",
+          "stability: passing_fraction 0.25 < 0.50",
+          "stability: peak_ratio 11.19 > 3.00"
+        ]
+      },
+      {
+        "train_end": "2014-01-17 00:00:00",
+        "test_start": "2014-01-20 00:00:00",
+        "selected_config": {
+          "fast_window": 100,
+          "slow_window": 200,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: trades 1.0 < 5.0",
+          "stability: passing_fraction 0.25 < 0.50"
+        ]
+      },
+      {
+        "train_end": "2015-01-23 00:00:00",
+        "test_start": "2015-01-26 00:00:00",
+        "selected_config": {
+          "fast_window": 100,
+          "slow_window": 200,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: total_return -0.1077 <= 0.0000",
+          "performance: sharpe -0.788 < 0.500",
+          "performance: calmar -0.506 < 0.500",
+          "performance: profit_factor 0.835 < 1.050",
+          "performance: max_drawdown -0.213 < -0.200",
+          "performance: trades 2.0 < 5.0"
+        ]
+      },
+      {
+        "train_end": "2016-01-30 00:00:00",
+        "test_start": "2016-02-01 00:00:00",
+        "selected_config": {
+          "fast_window": 20,
+          "slow_window": 150,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: trades 3.0 < 5.0"
+        ]
+      },
+      {
+        "train_end": "2017-02-15 00:00:00",
+        "test_start": "2017-02-16 00:00:00",
+        "selected_config": {
+          "fast_window": 50,
+          "slow_window": 150,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: trades 1.0 < 5.0"
+        ]
+      },
+      {
+        "train_end": "2018-02-22 00:00:00",
+        "test_start": "2018-02-23 00:00:00",
+        "selected_config": {
+          "fast_window": 50,
+          "slow_window": 150,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: total_return -0.0623 <= 0.0000",
+          "performance: sharpe -0.426 < 0.500",
+          "performance: calmar -0.432 < 0.500",
+          "performance: profit_factor 0.903 < 1.050",
+          "performance: trades 4.0 < 5.0"
+        ]
+      },
+      {
+        "train_end": "2019-03-06 00:00:00",
+        "test_start": "2019-03-07 00:00:00",
+        "selected_config": {
+          "fast_window": 50,
+          "slow_window": 150,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: total_return -0.0681 <= 0.0000",
+          "performance: sharpe -0.369 < 0.500",
+          "performance: calmar -0.285 < 0.500",
+          "performance: profit_factor 0.934 < 1.050",
+          "performance: max_drawdown -0.238 < -0.200",
+          "performance: trades 1.0 < 5.0"
+        ]
+      },
+      {
+        "train_end": "2020-03-18 00:00:00",
+        "test_start": "2020-03-19 00:00:00",
+        "selected_config": {
+          "fast_window": 20,
+          "slow_window": 100,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: trades 1.0 < 5.0"
+        ]
+      },
+      {
+        "train_end": "2021-03-30 00:00:00",
+        "test_start": "2021-03-31 00:00:00",
+        "selected_config": {
+          "fast_window": 20,
+          "slow_window": 100,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: total_return -0.1182 <= 0.0000",
+          "performance: sharpe -0.733 < 0.500",
+          "performance: calmar -0.694 < 0.500",
+          "performance: profit_factor 0.870 < 1.050"
+        ]
+      },
+      {
+        "train_end": "2022-04-12 00:00:00",
+        "test_start": "2022-04-13 00:00:00",
+        "selected_config": {
+          "fast_window": 100,
+          "slow_window": 200,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: total_return -0.0782 <= 0.0000",
+          "performance: sharpe -0.877 < 0.500",
+          "performance: calmar -0.752 < 0.500",
+          "performance: profit_factor 0.743 < 1.050",
+          "performance: trades 3.0 < 5.0"
+        ]
+      },
+      {
+        "train_end": "2023-04-25 00:00:00",
+        "test_start": "2023-04-26 00:00:00",
+        "selected_config": {
+          "fast_window": 50,
+          "slow_window": 150,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: trades 1.0 < 5.0"
+        ]
+      },
+      {
+        "train_end": "2024-05-08 00:00:00",
+        "test_start": "2024-05-09 00:00:00",
+        "selected_config": {
+          "fast_window": 50,
+          "slow_window": 150,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: total_return -0.0778 <= 0.0000",
+          "performance: sharpe -0.155 < 0.500",
+          "performance: calmar -0.282 < 0.500",
+          "performance: profit_factor 0.971 < 1.050",
+          "performance: max_drawdown -0.276 < -0.200",
+          "performance: trades 2.0 < 5.0"
+        ]
+      },
+      {
+        "train_end": "2025-05-23 00:00:00",
+        "test_start": "2025-05-26 00:00:00",
+        "selected_config": {
+          "fast_window": 100,
+          "slow_window": 200,
+          "fee_rate": 0.001,
+          "slippage_rate": 0.0005
+        },
+        "passed": false,
+        "reasons": [
+          "performance: trades 1.0 < 5.0"
+        ]
+      }
+    ]
+  }
+}
