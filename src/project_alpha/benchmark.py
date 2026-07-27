@@ -8,6 +8,7 @@ import math
 import pandas as pd
 
 from project_alpha.evaluation import (
+    GateDecision,
     PerformanceMetrics,
     calculate_performance_metrics,
 )
@@ -23,6 +24,26 @@ class BenchmarkReport:
     drawdown_improvement: float
     sharpe_improvement: float
     calmar_improvement: float
+
+
+@dataclass(frozen=True)
+class BenchmarkCriteria:
+    """Require either excess return or a material risk-adjusted improvement."""
+
+    minimum_excess_total_return: float = 0.0
+    minimum_drawdown_improvement: float = 0.05
+    minimum_sharpe_improvement: float = 0.0
+
+    def validate(self) -> None:
+        values = (
+            self.minimum_excess_total_return,
+            self.minimum_drawdown_improvement,
+            self.minimum_sharpe_improvement,
+        )
+        if not all(math.isfinite(value) for value in values):
+            raise ValueError("benchmark criteria must be finite")
+        if self.minimum_drawdown_improvement < 0.0:
+            raise ValueError("minimum_drawdown_improvement cannot be negative")
 
 
 def _difference(strategy_value: float, benchmark_value: float) -> float:
@@ -77,5 +98,33 @@ def compare_buy_and_hold(
         calmar_improvement=_difference(
             strategy_performance.calmar,
             benchmark_performance.calmar,
+        ),
+    )
+
+
+def evaluate_benchmark_acceptance(
+    report: BenchmarkReport,
+    criteria: BenchmarkCriteria | None = None,
+) -> GateDecision:
+    """Pass only if return wins or lower risk clearly compensates for lagging."""
+    rules = criteria or BenchmarkCriteria()
+    rules.validate()
+    return_winner = (
+        report.excess_total_return >= rules.minimum_excess_total_return
+    )
+    risk_adjusted_winner = (
+        report.drawdown_improvement >= rules.minimum_drawdown_improvement
+        and report.sharpe_improvement >= rules.minimum_sharpe_improvement
+    )
+    if return_winner or risk_adjusted_winner:
+        return GateDecision(passed=True, reasons=())
+    return GateDecision(
+        passed=False,
+        reasons=(
+            "strategy neither beat buy-and-hold return nor delivered the "
+            "required drawdown and Sharpe improvement "
+            f"(excess_return={report.excess_total_return:.3f}, "
+            f"drawdown_improvement={report.drawdown_improvement:.3f}, "
+            f"sharpe_improvement={report.sharpe_improvement:.3f})",
         ),
     )
