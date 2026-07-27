@@ -1,0 +1,48 @@
+{
+  "status": "PRELIMINARY_RESEARCH_ONLY",
+  "warning": "Both series in this screen are split-adjusted market prices, not verified total-return series. Cash distributions are missing, so these figures may reject a candidate but cannot promote one to paper trading.",
+  "period": {
+    "start": "2018-02-01",
+    "end": "2026-07-27",
+    "00719B_observations": 2060,
+    "overlapping_observations": 2055
+  },
+  "00719B_raw_price": {
+    "cumulative_return": 0.055351,
+    "annualized_return": 0.006615,
+    "annualized_volatility": 0.047819,
+    "sharpe": 0.161960,
+    "maximum_drawdown": -0.143671
+  },
+  "relationship": {
+    "daily_return_correlation_with_0050": -0.340631
+  },
+  "descriptive_allocations": {
+    "0050_100": {
+      "annualized_return": 0.210020,
+      "sharpe": 1.003323,
+      "maximum_drawdown": -0.363816
+    },
+    "0050_80_00719B_20": {
+      "annualized_return": 0.171414,
+      "sharpe": 1.030793,
+      "maximum_drawdown": -0.287774
+    },
+    "0050_60_00719B_40": {
+      "annualized_return": 0.131555,
+      "sharpe": 1.071358,
+      "maximum_drawdown": -0.204196
+    },
+    "0050_40_00719B_60": {
+      "annualized_return": 0.090663,
+      "sharpe": 1.125432,
+      "maximum_drawdown": -0.119745
+    }
+  },
+  "conclusion": "00719B is materially more defensive than 00679B in raw-price history and has useful negative daily correlation with 0050. A 60/40 equity/bond allocation narrowly missed the project's 20% drawdown ceiling, while 40/60 met it at a substantial return cost. No allocation can advance until official distributions are reconstructed and the full walk-forward and cost gates are rerun.",
+  "promotion": {
+    "historical_validation_complete": false,
+    "paper_trading_candidate": false,
+    "live_ready": false
+  }
+}
