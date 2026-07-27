@@ -1,0 +1,203 @@
+{
+  "status": "REVALIDATION_ONLY",
+  "price_basis": "total_return_reconstructed",
+  "observations": 5000,
+  "start": "2006-03-20",
+  "end": "2026-07-27",
+  "parameter_search": false,
+  "strategies": {
+    "sma_20_200": {
+      "config": {
+        "fast_window": 20,
+        "slow_window": 200,
+        "fee_rate": 0.001,
+        "slippage_rate": 0.0005
+      },
+      "result": {
+        "passed": false,
+        "reasons": [
+          "aggregate: calmar 0.435 < 0.500",
+          "aggregate: max_drawdown -0.282 < -0.200",
+          "cost_stress: 1.0x costs: calmar 0.435 < 0.500",
+          "cost_stress: 1.0x costs: max_drawdown -0.282 < -0.200",
+          "cost_stress: 1.5x costs: calmar 0.430 < 0.500",
+          "cost_stress: 1.5x costs: max_drawdown -0.282 < -0.200",
+          "cost_stress: 2.0x costs: calmar 0.424 < 0.500",
+          "cost_stress: 2.0x costs: max_drawdown -0.282 < -0.200",
+          "cost_stress: cost_stress_pass_fraction 0.00 < 1.00",
+          "benchmark: strategy neither beat buy-and-hold return nor delivered the required drawdown and Sharpe improvement (excess_return=-6.280, drawdown_improvement=0.057, sharpe_improvement=-0.118)",
+          "fold_pass_fraction 0.00 < 0.60"
+        ],
+        "folds": 16,
+        "fold_pass_fraction": 0.0,
+        "positive_fold_fraction": 0.6875,
+        "total_return": 5.287246849188231,
+        "annualized_return": 0.12280157263322211,
+        "sharpe": 0.8392442552278288,
+        "calmar": 0.4349231916325188,
+        "maximum_drawdown": -0.2823523210438069,
+        "profit_factor": 1.1898463950912463,
+        "cost_stress_pass_fraction": 0.0,
+        "benchmark_passed": false,
+        "benchmark_total_return": 11.566848047253046,
+        "benchmark_excess_total_return": -6.279601198064815,
+        "benchmark_drawdown_improvement": 0.05693988654972637,
+        "benchmark_sharpe_improvement": -0.1180869102971821
+      }
+    },
+    "price_above_200": {
+      "config": {
+        "fast_window": 1,
+        "slow_window": 200,
+        "fee_rate": 0.001,
+        "slippage_rate": 0.0005
+      },
+      "result": {
+        "passed": false,
+        "reasons": [
+          "aggregate: max_drawdown -0.216 < -0.200",
+          "cost_stress: 1.0x costs: max_drawdown -0.216 < -0.200",
+          "cost_stress: 1.5x costs: max_drawdown -0.230 < -0.200",
+          "cost_stress: 2.0x costs: max_drawdown -0.243 < -0.200",
+          "cost_stress: cost_stress_pass_fraction 0.00 < 1.00",
+          "benchmark: strategy neither beat buy-and-hold return nor delivered the required drawdown and Sharpe improvement (excess_return=-5.250, drawdown_improvement=0.123, sharpe_improvement=-0.031)",
+          "fold_pass_fraction 0.12 < 0.60"
+        ],
+        "folds": 16,
+        "fold_pass_fraction": 0.125,
+        "positive_fold_fraction": 0.625,
+        "total_return": 6.317027145218167,
+        "annualized_return": 0.1335823726862062,
+        "sharpe": 0.9260660259587842,
+        "calmar": 0.6176125260374675,
+        "maximum_drawdown": -0.2162883151727114,
+        "profit_factor": 1.2094731986415388,
+        "cost_stress_pass_fraction": 0.0,
+        "benchmark_passed": false,
+        "benchmark_total_return": 11.566848047253046,
+        "benchmark_excess_total_return": -5.249820902034879,
+        "benchmark_drawdown_improvement": 0.12300389242082188,
+        "benchmark_sharpe_improvement": -0.031265139566226674
+      }
+    },
+    "absolute_momentum_252_21": {
+      "config": {
+        "lookback": 252,
+        "rebalance_interval": 21,
+        "fee_rate": 0.001,
+        "slippage_rate": 0.0005
+      },
+      "result": {
+        "passed": false,
+        "reasons": [
+          "aggregate: calmar 0.464 < 0.500",
+          "aggregate: max_drawdown -0.313 < -0.200",
+          "cost_stress: 1.0x costs: calmar 0.464 < 0.500",
+          "cost_stress: 1.0x costs: max_drawdown -0.313 < -0.200",
+          "cost_stress: 1.5x costs: calmar 0.457 < 0.500",
+          "cost_stress: 1.5x costs: max_drawdown -0.316 < -0.200",
+          "cost_stress: 2.0x costs: calmar 0.450 < 0.500",
+          "cost_stress: 2.0x costs: max_drawdown -0.319 < -0.200",
+          "cost_stress: cost_stress_pass_fraction 0.00 < 1.00",
+          "benchmark: strategy neither beat buy-and-hold return nor delivered the required drawdown and Sharpe improvement (excess_return=-3.982, drawdown_improvement=0.027, sharpe_improvement=-0.043)",
+          "fold_pass_fraction 0.00 < 0.60"
+        ],
+        "folds": 16,
+        "fold_pass_fraction": 0.0,
+        "positive_fold_fraction": 0.75,
+        "total_return": 7.585096300220055,
+        "annualized_return": 0.1450539408712026,
+        "sharpe": 0.9143172901236756,
+        "calmar": 0.4639317756962643,
+        "maximum_drawdown": -0.31266222421067635,
+        "profit_factor": 1.209128205197707,
+        "cost_stress_pass_fraction": 0.0,
+        "benchmark_passed": false,
+        "benchmark_total_return": 11.566848047253046,
+        "benchmark_excess_total_return": -3.981751747032991,
+        "benchmark_drawdown_improvement": 0.026629983382856937,
+        "benchmark_sharpe_improvement": -0.04301387540133528
+      }
+    },
+    "core_70_trend_30": {
+      "config": {
+        "trend_window": 200,
+        "core_weight": 0.7,
+        "rebalance_interval": 5,
+        "fee_rate": 0.001,
+        "slippage_rate": 0.0005
+      },
+      "result": {
+        "passed": false,
+        "reasons": [
+          "aggregate: max_drawdown -0.278 < -0.200",
+          "cost_stress: 1.0x costs: max_drawdown -0.278 < -0.200",
+          "cost_stress: 1.5x costs: max_drawdown -0.278 < -0.200",
+          "cost_stress: 2.0x costs: max_drawdown -0.279 < -0.200",
+          "cost_stress: cost_stress_pass_fraction 0.00 < 1.00",
+          "fold_pass_fraction 0.00 < 0.60"
+        ],
+        "folds": 16,
+        "fold_pass_fraction": 0.0,
+        "positive_fold_fraction": 0.75,
+        "total_return": 10.049396274092866,
+        "annualized_return": 0.16340339982734564,
+        "sharpe": 0.992844663502455,
+        "calmar": 0.5879339774462469,
+        "maximum_drawdown": -0.27792814515858655,
+        "profit_factor": 1.1957611318784043,
+        "cost_stress_pass_fraction": 0.0,
+        "benchmark_passed": true,
+        "benchmark_total_return": 11.566848047253046,
+        "benchmark_excess_total_return": -1.5174517731601807,
+        "benchmark_drawdown_improvement": 0.06136406243494674,
+        "benchmark_sharpe_improvement": 0.035513497977444186
+      }
+    },
+    "volatility_12_5_buffered": {
+      "config": {
+        "trend_window": 200,
+        "volatility_window": 20,
+        "target_annualized_volatility": 0.125,
+        "periods_per_year": 252,
+        "maximum_exposure": 1.0,
+        "fee_rate": 0.001,
+        "slippage_rate": 0.0005,
+        "rebalance_interval": 5,
+        "minimum_weight_change": 0.05
+      },
+      "result": {
+        "passed": false,
+        "reasons": [
+          "aggregate: calmar 0.468 < 0.500",
+          "aggregate: max_drawdown -0.200 < -0.200",
+          "cost_stress: 1.0x costs: calmar 0.468 < 0.500",
+          "cost_stress: 1.0x costs: max_drawdown -0.200 < -0.200",
+          "cost_stress: 1.5x costs: calmar 0.427 < 0.500",
+          "cost_stress: 1.5x costs: max_drawdown -0.210 < -0.200",
+          "cost_stress: 2.0x costs: calmar 0.389 < 0.500",
+          "cost_stress: 2.0x costs: max_drawdown -0.220 < -0.200",
+          "cost_stress: cost_stress_pass_fraction 0.00 < 1.00",
+          "benchmark: strategy neither beat buy-and-hold return nor delivered the required drawdown and Sharpe improvement (excess_return=-8.427, drawdown_improvement=0.139, sharpe_improvement=-0.112)",
+          "fold_pass_fraction 0.06 < 0.60"
+        ],
+        "folds": 16,
+        "fold_pass_fraction": 0.0625,
+        "positive_fold_fraction": 0.6875,
+        "total_return": 3.1399903927045,
+        "annualized_return": 0.09363136709377962,
+        "sharpe": 0.8452273361993635,
+        "calmar": 0.46802512000470736,
+        "maximum_drawdown": -0.20005628563876632,
+        "profit_factor": 1.1861188591528018,
+        "cost_stress_pass_fraction": 0.0,
+        "benchmark_passed": false,
+        "benchmark_total_return": 11.566848047253046,
+        "benchmark_excess_total_return": -8.426857654548545,
+        "benchmark_drawdown_improvement": 0.13923592195476697,
+        "benchmark_sharpe_improvement": -0.11210382932564733
+      }
+    }
+  },
+  "paper_trading_candidate": false
+}
