@@ -113,8 +113,13 @@ def fetch_twse_etf_dividends(
 ) -> pd.DataFrame:
     """Fetch official dividends one year at a time with conservative pacing."""
     current_year = date.today().year
-    if not etf_code.isdigit():
-        raise ValueError("etf_code must contain digits only")
+    if (
+        not etf_code
+        or not etf_code.isascii()
+        or not etf_code.isalnum()
+        or etf_code != etf_code.upper()
+    ):
+        raise ValueError("etf_code must contain uppercase ASCII letters or digits")
     if start_year > end_year:
         raise ValueError("start_year cannot be after end_year")
     if start_year < 2003 or end_year > current_year:
