@@ -1,0 +1,50 @@
+{
+  "status": "REJECTED",
+  "source": "Reconstructed 0050 total-return series",
+  "observations": 5000,
+  "period": {
+    "start": "2006-03-20",
+    "end": "2026-07-27"
+  },
+  "selection": {
+    "parameter_search": false,
+    "description": "One predeclared equal-weight 50/100/200-day trend ensemble"
+  },
+  "config": {
+    "windows": [50, 100, 200],
+    "rebalance_interval": 5,
+    "fee_rate": 0.001,
+    "slippage_rate": 0.0005,
+    "maximum_exposure": 1.0,
+    "leverage": false
+  },
+  "result": {
+    "passed": false,
+    "folds": 16,
+    "fold_pass_fraction": 0.3125,
+    "positive_fold_fraction": 0.75,
+    "total_return": 5.669043844250545,
+    "annualized_return": 0.12697947110903662,
+    "sharpe": 0.9479570042773262,
+    "calmar": 0.5960401200807117,
+    "maximum_drawdown": -0.21303846306829466,
+    "profit_factor": 1.2142041760706812,
+    "turnover": 81.66666666666666,
+    "cost_stress_pass_fraction": 0.0,
+    "benchmark_passed": false,
+    "benchmark_total_return": 11.566848047253046,
+    "benchmark_excess_total_return": -5.897804203002501,
+    "benchmark_drawdown_improvement": 0.12625374452523863,
+    "benchmark_sharpe_improvement": -0.009374161247684643
+  },
+  "main_rejection_reasons": [
+    "Maximum drawdown was 21.30%, above the 20% limit.",
+    "Only 31.25% of walk-forward folds passed, below the 60% minimum.",
+    "All transaction-cost scenarios failed the complete gate.",
+    "The strategy lagged buy-and-hold and its Sharpe was lower."
+  ],
+  "promotion": {
+    "paper_trading_candidate": false,
+    "live_ready": false
+  }
+}
