@@ -9,6 +9,7 @@ and must not be described as a pristine future confirmation set for later ideas.
 | EXP-001 | SMA long/cash | Parameters reselected in each expanding fold | Rejected | 28.0% maximum drawdown, 46.2% positive folds, all cost scenarios failed |
 | EXP-002 | Fixed 20/200 SMA crossover | Declared once; no fold reselection | Rejected | 27.6% maximum drawdown, 0% fold pass rate, all cost scenarios failed |
 | EXP-003 | Price above 200-day SMA | Declared once; no fold reselection | Rejected | 21.1% maximum drawdown, 23.1% fold pass rate, all cost scenarios failed |
+| EXP-004 | Price above 200-day SMA with unlevered volatility scaling | Predeclared 10%, 12.5%, and 15% volatility sensitivity set | Rejected | 10% target survived the base gate but failed stressed costs and fold consistency; no target passed all gates |
 
 Passing an exploratory result would still not authorize live trading. A
 candidate must next survive paper trading on observations that were unavailable
