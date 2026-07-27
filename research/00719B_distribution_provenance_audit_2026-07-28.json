@@ -3,14 +3,14 @@
   "audit_date": "2026-07-28",
   "expected_distribution_events": 31,
   "secondary_history_events_matching": 31,
-  "primary_regulatory_events_verified": 12,
-  "primary_regulatory_events_remaining": 19,
+  "primary_regulatory_events_verified": 15,
+  "primary_regulatory_events_remaining": 16,
   "primary_evidence_manifest": "research/00719B_primary_distribution_evidence_2026-07-28.csv",
   "secondary_history_source": "https://goodinfo.tw/tw/StockDividendPolicy.asp?STOCK_ID=00719B",
   "decision": {
     "complete_for_historical_research": true,
     "complete_for_paper_promotion": false,
-    "reason": "Nineteen historical events still lack a directly linked primary regulatory or industry-association filing."
+    "reason": "Sixteen historical events still lack a directly linked primary regulatory or industry-association filing."
   },
   "safety": {
     "paper_tracking_started": false,
