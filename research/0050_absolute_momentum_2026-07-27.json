@@ -1,0 +1,26 @@
+{
+  "source": "0050__D.txt",
+  "data_note": "Raw 0050 close; pre-2025-06-18 divided by 4 for split continuity; dividends unadjusted.",
+  "rows": 5000,
+  "start": "2006-03-20",
+  "end": "2026-07-27",
+  "config": {"lookback": 252, "rebalance_interval": 21, "fee_rate": 0.001, "slippage_rate": 0.0005},
+  "result": {
+    "passed": false,
+    "folds": 16,
+    "fold_pass_fraction": 0.0,
+    "positive_fold_fraction": 0.625,
+    "total_return": 1.9736123917916912,
+    "annualized_return": 0.07048422646596375,
+    "sharpe": 0.532631778753791,
+    "calmar": 0.20571696775555104,
+    "max_drawdown": -0.3426271893610575,
+    "profit_factor": 1.124348941089416,
+    "turnover": 15.0,
+    "cost_stress_pass_fraction": 0.0,
+    "benchmark_passed": false,
+    "benchmark_excess_total_return": -2.503071546032148,
+    "benchmark_drawdown_improvement": 0.021188600112626466,
+    "benchmark_sharpe_improvement": -0.14025042142833166
+  }
+}
