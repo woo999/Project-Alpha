@@ -1,0 +1,77 @@
+{
+  "research_status": "SENSITIVITY_ONLY",
+  "family": "unlevered_volatility_managed_price_above_sma_200",
+  "instrument_proxy": "FTSE TWSE Taiwan 50 Total Return Index",
+  "data_range": [
+    "2010-01-04",
+    "2026-07-24"
+  ],
+  "targets_tested": [
+    0.1,
+    0.125,
+    0.15
+  ],
+  "results": [
+    {
+      "target_volatility": 0.1,
+      "passed": false,
+      "total_return": 2.102024493624226,
+      "annualized_return": 0.09098521048207941,
+      "sharpe": 0.9246438199898167,
+      "calmar": 0.5293019156920886,
+      "max_drawdown": -0.1718966204063549,
+      "exposure": 0.5664474609881195,
+      "fold_pass_fraction": 0.46153846153846156,
+      "positive_fold_fraction": 0.6923076923076923,
+      "cost_stress_passed": false,
+      "reasons": [
+        "cost_stress: 1.5x costs: calmar 0.461 < 0.500",
+        "cost_stress: 2.0x costs: calmar 0.402 < 0.500",
+        "cost_stress: cost_stress_pass_fraction 0.33 < 1.00",
+        "fold_pass_fraction 0.46 < 0.60"
+      ]
+    },
+    {
+      "target_volatility": 0.125,
+      "passed": false,
+      "total_return": 2.988808035529096,
+      "annualized_return": 0.11229171607410016,
+      "sharpe": 0.9598535989177076,
+      "calmar": 0.5759649454579053,
+      "max_drawdown": -0.19496276111877897,
+      "exposure": 0.6625405388629249,
+      "fold_pass_fraction": 0.5384615384615384,
+      "positive_fold_fraction": 0.7692307692307693,
+      "cost_stress_passed": false,
+      "reasons": [
+        "cost_stress: 1.5x costs: max_drawdown -0.207 < -0.200",
+        "cost_stress: 2.0x costs: calmar 0.456 < 0.500",
+        "cost_stress: 2.0x costs: max_drawdown -0.220 < -0.200",
+        "cost_stress: cost_stress_pass_fraction 0.33 < 1.00",
+        "fold_pass_fraction 0.54 < 0.60"
+      ]
+    },
+    {
+      "target_volatility": 0.15,
+      "passed": false,
+      "total_return": 4.095905915009641,
+      "annualized_return": 0.13344811941275436,
+      "sharpe": 1.0238704326031192,
+      "calmar": 0.6515924200128189,
+      "max_drawdown": -0.2048030568098521,
+      "exposure": 0.7207208679371067,
+      "fold_pass_fraction": 0.5384615384615384,
+      "positive_fold_fraction": 0.7692307692307693,
+      "cost_stress_passed": false,
+      "reasons": [
+        "aggregate: max_drawdown -0.205 < -0.200",
+        "cost_stress: 1.0x costs: max_drawdown -0.205 < -0.200",
+        "cost_stress: 1.5x costs: max_drawdown -0.217 < -0.200",
+        "cost_stress: 2.0x costs: max_drawdown -0.228 < -0.200",
+        "cost_stress: cost_stress_pass_fraction 0.00 < 1.00",
+        "fold_pass_fraction 0.54 < 0.60"
+      ]
+    }
+  ],
+  "conclusion": "No target passed all gates. Results are exploratory and the tested history is not a pristine future confirmation set."
+}
