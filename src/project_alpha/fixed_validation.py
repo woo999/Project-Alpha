@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import Any, Callable
 
 import pandas as pd
 
@@ -40,7 +41,7 @@ class FixedFoldResult:
 
 @dataclass(frozen=True)
 class FixedWalkForwardResult:
-    config: BacktestConfig
+    config: object
     quality_report: DataQualityReport
     folds: tuple[FixedFoldResult, ...]
     aggregate_result: pd.DataFrame
@@ -61,10 +62,12 @@ def _reset_equity(result: pd.DataFrame) -> pd.DataFrame:
     return reset
 
 
-def run_fixed_sma_walk_forward(
+def run_fixed_strategy_walk_forward(
     prices: pd.Series,
-    config: BacktestConfig,
+    config: Any,
+    runner: Callable[[pd.Series, Any], pd.DataFrame],
     *,
+    minimum_history: int,
     min_train: int,
     test_size: int,
     step_size: int | None = None,
@@ -75,9 +78,10 @@ def run_fixed_sma_walk_forward(
     cost_stress_criteria: CostStressCriteria | None = None,
 ) -> FixedWalkForwardResult:
     """Evaluate one unchanged rule over successive unseen periods."""
-    config.validate()
-    if min_train <= config.slow_window:
-        raise ValueError("min_train must exceed the slow window")
+    if minimum_history < 1:
+        raise ValueError("minimum_history must be positive")
+    if min_train <= minimum_history:
+        raise ValueError("min_train must exceed minimum_history")
     rules = walk_forward_criteria or WalkForwardCriteria()
     rules.validate()
     step = test_size if step_size is None else step_size
@@ -95,7 +99,7 @@ def run_fixed_sma_walk_forward(
     folds: list[FixedFoldResult] = []
     for boundary in boundaries:
         segment = clean.iloc[: boundary.test_end]
-        full_result = run_long_only_sma(segment, config)
+        full_result = runner(segment, config)
         test_result = _reset_equity(
             full_result.iloc[boundary.test_start : boundary.test_end]
         )
@@ -177,4 +181,35 @@ def run_fixed_sma_walk_forward(
         fold_pass_fraction=fold_pass_fraction,
         positive_fold_fraction=positive_fold_fraction,
         decision=GateDecision(passed=not reasons, reasons=tuple(reasons)),
+    )
+
+
+def run_fixed_sma_walk_forward(
+    prices: pd.Series,
+    config: BacktestConfig,
+    *,
+    min_train: int,
+    test_size: int,
+    step_size: int | None = None,
+    periods_per_year: int = 252,
+    quality_policy: DataQualityPolicy | None = None,
+    acceptance_criteria: AcceptanceCriteria | None = None,
+    walk_forward_criteria: WalkForwardCriteria | None = None,
+    cost_stress_criteria: CostStressCriteria | None = None,
+) -> FixedWalkForwardResult:
+    """Evaluate one unchanged SMA rule over successive unseen periods."""
+    config.validate()
+    return run_fixed_strategy_walk_forward(
+        prices,
+        config,
+        run_long_only_sma,
+        minimum_history=config.slow_window,
+        min_train=min_train,
+        test_size=test_size,
+        step_size=step_size,
+        periods_per_year=periods_per_year,
+        quality_policy=quality_policy,
+        acceptance_criteria=acceptance_criteria,
+        walk_forward_criteria=walk_forward_criteria,
+        cost_stress_criteria=cost_stress_criteria,
     )
