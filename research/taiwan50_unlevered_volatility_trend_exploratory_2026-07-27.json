@@ -1,0 +1,136 @@
+{
+  "research_status": "REJECTED",
+  "strategy": "unlevered_volatility_managed_price_above_sma_200",
+  "config": {
+    "trend_window": 200,
+    "volatility_window": 20,
+    "target_annualized_volatility": 0.15,
+    "periods_per_year": 252,
+    "maximum_exposure": 1.0,
+    "fee_rate": 0.001,
+    "slippage_rate": 0.0005
+  },
+  "instrument_proxy": "FTSE TWSE Taiwan 50 Total Return Index",
+  "data_range": [
+    "2010-01-04",
+    "2026-07-24"
+  ],
+  "folds": 13,
+  "oos_observations": 3276,
+  "aggregate_performance": {
+    "observations": 3276,
+    "total_return": 4.095905915009641,
+    "annualized_return": 0.13344811941275436,
+    "annualized_volatility": 0.13073028070788262,
+    "sharpe": 1.0238704326031192,
+    "sortino": 1.491679659765063,
+    "max_drawdown": -0.2048030568098521,
+    "calmar": 0.6515924200128189,
+    "profit_factor": 1.2135731411289898,
+    "hit_rate": 0.5334586466165413,
+    "exposure": 0.7207208679371067,
+    "trades": 93.52151940825678
+  },
+  "benchmark": {
+    "benchmark_name": "frictionless_buy_and_hold",
+    "benchmark_performance": {
+      "observations": 3276,
+      "total_return": 10.97983177884334,
+      "annualized_return": 0.2104803606914929,
+      "annualized_volatility": 0.19076595820548484,
+      "sharpe": 1.0971335864404828,
+      "sortino": 1.6233045372769193,
+      "max_drawdown": -0.3395537270164858,
+      "calmar": 0.6198735102715388,
+      "profit_factor": 1.2152278524531037,
+      "hit_rate": 0.535474006116208,
+      "exposure": 1.0,
+      "trades": 1.0
+    },
+    "excess_total_return": -6.8839258638337,
+    "drawdown_improvement": 0.13475067020663367,
+    "sharpe_improvement": -0.07326315383736359,
+    "calmar_improvement": 0.03171890974128011
+  },
+  "cost_stress": {
+    "passed": false,
+    "pass_fraction": 0.0,
+    "scenarios": [
+      {
+        "multiplier": 1.0,
+        "performance": {
+          "observations": 3276,
+          "total_return": 4.095905915009641,
+          "annualized_return": 0.13344811941275436,
+          "annualized_volatility": 0.13073028070788262,
+          "sharpe": 1.0238704326031192,
+          "sortino": 1.491679659765063,
+          "max_drawdown": -0.2048030568098521,
+          "calmar": 0.6515924200128189,
+          "profit_factor": 1.2135731411289898,
+          "hit_rate": 0.5334586466165413,
+          "exposure": 0.7207208679371067,
+          "trades": 93.52151940825678
+        },
+        "passed": false,
+        "reasons": [
+          "max_drawdown -0.205 < -0.200"
+        ]
+      },
+      {
+        "multiplier": 1.5,
+        "performance": {
+          "observations": 3276,
+          "total_return": 3.7752002543500733,
+          "annualized_return": 0.12779488934725847,
+          "annualized_volatility": 0.13071988145441624,
+          "sharpe": 0.9856736978171495,
+          "sortino": 1.433659316065881,
+          "max_drawdown": -0.21666363801490218,
+          "calmar": 0.589830811104855,
+          "profit_factor": 1.2045589384527768,
+          "hit_rate": 0.5334586466165413,
+          "exposure": 0.7207208679371067,
+          "trades": 93.52151940825678
+        },
+        "passed": false,
+        "reasons": [
+          "max_drawdown -0.217 < -0.200"
+        ]
+      },
+      {
+        "multiplier": 2.0,
+        "performance": {
+          "observations": 3276,
+          "total_return": 3.474538682190672,
+          "annualized_return": 0.12216717028466006,
+          "annualized_volatility": 0.1307270472297631,
+          "sharpe": 0.9473435790408093,
+          "sortino": 1.3755381474242354,
+          "max_drawdown": -0.22835534240333322,
+          "calmar": 0.5349871345198571,
+          "profit_factor": 1.195633357120669,
+          "hit_rate": 0.5327067669172932,
+          "exposure": 0.7207208679371067,
+          "trades": 93.52151940825678
+        },
+        "passed": false,
+        "reasons": [
+          "max_drawdown -0.228 < -0.200"
+        ]
+      }
+    ]
+  },
+  "fold_pass_fraction": 0.5384615384615384,
+  "positive_fold_fraction": 0.7692307692307693,
+  "passed": false,
+  "reasons": [
+    "aggregate: max_drawdown -0.205 < -0.200",
+    "cost_stress: 1.0x costs: max_drawdown -0.205 < -0.200",
+    "cost_stress: 1.5x costs: max_drawdown -0.217 < -0.200",
+    "cost_stress: 2.0x costs: max_drawdown -0.228 < -0.200",
+    "cost_stress: cost_stress_pass_fraction 0.00 < 1.00",
+    "fold_pass_fraction 0.54 < 0.60"
+  ],
+  "note": "Exploratory real-market proxy result. The history has already been inspected and is not a pristine future confirmation set. Exposure is capped at 100%; no leverage."
+}
