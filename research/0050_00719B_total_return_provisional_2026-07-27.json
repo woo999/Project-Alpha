@@ -1,0 +1,76 @@
+{
+  "status": "PROVISIONAL_HISTORICAL_CANDIDATE",
+  "warning": "00719B distributions were transcribed from a public secondary history because the official TWSE endpoint did not return the bond-ETF table. The 2026 amounts are consistent with issuer announcements, but the complete series is not yet official-source verified. This result cannot start paper trading.",
+  "period": {
+    "start": "2018-02-01",
+    "end": "2026-07-27",
+    "overlapping_observations": 2055,
+    "00719B_distribution_events": 31
+  },
+  "assets": {
+    "0050_total_return": {
+      "annualized_return": 0.248154,
+      "sharpe": 1.153770,
+      "maximum_drawdown": -0.339292
+    },
+    "00719B_provisional_total_return": {
+      "cumulative_return": 0.300908,
+      "annualized_return": 0.032801,
+      "sharpe": 0.731204,
+      "maximum_drawdown": -0.124038
+    },
+    "daily_return_correlation": -0.368483
+  },
+  "rule": {
+    "0050_weight": 0.60,
+    "00719B_weight": 0.40,
+    "rebalance_frequency_trading_days": 63,
+    "leverage": false,
+    "parameter_search": false
+  },
+  "aggregate_result": {
+    "cumulative_return": 2.460096,
+    "annualized_return": 0.164500,
+    "annualized_volatility": 0.120871,
+    "sharpe": 1.320788,
+    "maximum_drawdown": -0.176786,
+    "fold_pass_rate": 0.625,
+    "positive_fold_rate": 0.75,
+    "benchmark_gate": "PASS_RISK_ADJUSTED",
+    "benchmark_drawdown_improvement": 0.162506,
+    "benchmark_sharpe_improvement": 0.167017
+  },
+  "cost_stress": {
+    "turnover": 0.679109,
+    "cost_0.1_percent": {
+      "annualized_return": 0.164403,
+      "sharpe": 1.320086,
+      "maximum_drawdown": -0.176852
+    },
+    "cost_0.2_percent": {
+      "annualized_return": 0.164306,
+      "sharpe": 1.319384,
+      "maximum_drawdown": -0.176917
+    },
+    "cost_0.4_percent": {
+      "annualized_return": 0.164112,
+      "sharpe": 1.317980,
+      "maximum_drawdown": -0.177048
+    }
+  },
+  "folds": {
+    "count": 8,
+    "passed": 5,
+    "positive": 6,
+    "gate": "annualized_return >= 5%, Sharpe >= 0.5, maximum_drawdown >= -20%"
+  },
+  "decision": {
+    "historical_research_gate": "PASS_PROVISIONAL",
+    "paper_trading_candidate": false,
+    "live_ready": false,
+    "blockers": [
+      "Complete 00719B distributions are not yet verified from an authoritative primary source.",
+      "The 60/40 allocation was evaluated after this history was already visible, so future paper observations are required."
+    ]
+  }
+}
