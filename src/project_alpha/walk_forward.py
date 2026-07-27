@@ -7,7 +7,12 @@ from dataclasses import dataclass, replace
 import pandas as pd
 
 from project_alpha.backtest import BacktestConfig
-from project_alpha.benchmark import BenchmarkReport, compare_buy_and_hold
+from project_alpha.benchmark import (
+    BenchmarkCriteria,
+    BenchmarkReport,
+    compare_buy_and_hold,
+    evaluate_benchmark_acceptance,
+)
 from project_alpha.cost_stress import (
     CostStressCriteria,
     CostStressReport,
@@ -55,6 +60,7 @@ class WalkForwardValidationResult:
     aggregate_performance: PerformanceMetrics
     aggregate_decision: GateDecision
     benchmark_report: BenchmarkReport
+    benchmark_decision: GateDecision
     cost_stress_report: CostStressReport
     fold_pass_fraction: float
     positive_fold_fraction: float
@@ -104,6 +110,7 @@ def run_walk_forward_validation(
     stability_criteria: StabilityCriteria | None = None,
     walk_forward_criteria: WalkForwardCriteria | None = None,
     cost_stress_criteria: CostStressCriteria | None = None,
+    benchmark_criteria: BenchmarkCriteria | None = None,
 ) -> WalkForwardValidationResult:
     """Select on expanding history and evaluate only the next unseen segment."""
     rules = walk_forward_criteria or WalkForwardCriteria()
@@ -161,6 +168,10 @@ def run_walk_forward_validation(
         aggregate_performance,
         periods_per_year=periods_per_year,
     )
+    benchmark_decision = evaluate_benchmark_acceptance(
+        benchmark_report,
+        benchmark_criteria,
+    )
     cost_stress_report = evaluate_cost_stress(
         aggregate_result,
         periods_per_year=periods_per_year,
@@ -179,6 +190,9 @@ def run_walk_forward_validation(
     reasons.extend(
         f"cost_stress: {reason}"
         for reason in cost_stress_report.decision.reasons
+    )
+    reasons.extend(
+        f"benchmark: {reason}" for reason in benchmark_decision.reasons
     )
     if len(folds) < rules.minimum_folds:
         reasons.append(f"fold_count {len(folds)} < {rules.minimum_folds}")
@@ -201,6 +215,7 @@ def run_walk_forward_validation(
         aggregate_performance=aggregate_performance,
         aggregate_decision=aggregate_decision,
         benchmark_report=benchmark_report,
+        benchmark_decision=benchmark_decision,
         cost_stress_report=cost_stress_report,
         fold_pass_fraction=fold_pass_fraction,
         positive_fold_fraction=positive_fold_fraction,
