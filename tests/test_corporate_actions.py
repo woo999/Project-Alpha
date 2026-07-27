@@ -1,7 +1,11 @@
 import pandas as pd
 import pytest
 
-from project_alpha.corporate_actions import build_total_return_index
+from project_alpha.corporate_actions import (
+    audit_expected_actions,
+    build_total_return_index,
+    load_corporate_actions_csv,
+)
 
 
 def actions(index, rows):
@@ -52,3 +56,49 @@ def test_action_date_must_exist_in_prices():
 
     with pytest.raises(ValueError, match="absent"):
         build_total_return_index(prices, events)
+
+
+def test_load_csv_preserves_explicit_events(tmp_path):
+    source = tmp_path / "actions.csv"
+    source.write_text(
+        "date,split_ratio,cash_dividend\n"
+        "2025-01-17,1,2.7\n"
+        "2025-06-18,4,0\n"
+        "2025-07-21,1,0.36\n",
+        encoding="utf-8",
+    )
+    prices = pd.DatetimeIndex(
+        ["2025-01-17", "2025-06-18", "2025-07-21"]
+    )
+
+    result = load_corporate_actions_csv(source, price_index=prices)
+
+    assert list(result.columns) == ["split_ratio", "cash_dividend"]
+    assert result.loc["2025-06-18", "split_ratio"] == pytest.approx(4.0)
+    assert result.loc["2025-07-21", "cash_dividend"] == pytest.approx(0.36)
+
+
+def test_load_csv_does_not_silently_fill_empty_values(tmp_path):
+    source = tmp_path / "actions.csv"
+    source.write_text(
+        "date,split_ratio,cash_dividend\n2025-01-17,1,\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="empty values"):
+        load_corporate_actions_csv(source)
+
+
+def test_coverage_fails_when_known_event_is_missing():
+    dates = pd.DatetimeIndex(["2025-01-17", "2025-06-18"])
+    events = actions(dates, [[1.0, 2.7], [4.0, 0.0]])
+
+    result = audit_expected_actions(
+        events,
+        expected_dividend_dates=["2025-01-17", "2025-07-21"],
+        expected_split_dates=["2025-06-18"],
+    )
+
+    assert result.complete is False
+    assert result.missing_dividend_dates == ("2025-07-21",)
+    assert result.missing_split_dates == ()
