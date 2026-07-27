@@ -1,0 +1,43 @@
+{
+  "source": "0050__D.txt",
+  "data_note": "Raw 0050 OHLCV; pre-2025-06-18 close divided by 4 for split continuity; cash dividends remain unadjusted.",
+  "rows": 5000,
+  "start": "2006-03-20",
+  "end": "2026-07-27",
+  "results": {
+    "daily": {
+      "passed": false,
+      "folds": 16,
+      "fold_pass_fraction": 0.375,
+      "positive_fold_fraction": 0.5625,
+      "total_return": 0.946338978066825,
+      "annualized_return": 0.04250021930061254,
+      "sharpe": 0.43188632958024104,
+      "calmar": 0.16472572560152868,
+      "max_drawdown": -0.258005962003898,
+      "profit_factor": 1.0923313255793081,
+      "trades": 149.96489416998162,
+      "turnover": 141.75223300717136,
+      "cost": 0.21262834951075701,
+      "benchmark_total_return": 4.476683937823839,
+      "cost_stress_pass_fraction": 0.0
+    },
+    "buffered_5d_5pct": {
+      "passed": false,
+      "folds": 16,
+      "fold_pass_fraction": 0.1875,
+      "positive_fold_fraction": 0.625,
+      "total_return": 0.9315251690559616,
+      "annualized_return": 0.04200252949548733,
+      "sharpe": 0.43245314202033763,
+      "calmar": 0.1897448899546909,
+      "max_drawdown": -0.22136316559311342,
+      "profit_factor": 1.0939021585880804,
+      "trades": 104.44809127687388,
+      "turnover": 95.86834257265357,
+      "cost": 0.14380251385898035,
+      "benchmark_total_return": 4.476683937823839,
+      "cost_stress_pass_fraction": 0.0
+    }
+  }
+}
