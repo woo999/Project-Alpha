@@ -17,6 +17,8 @@ class VolatilityManagedTrendConfig:
     maximum_exposure: float = 1.0
     fee_rate: float = 0.001
     slippage_rate: float = 0.0005
+    rebalance_interval: int = 1
+    minimum_weight_change: float = 0.0
 
     def validate(self) -> None:
         if self.trend_window < 2 or self.volatility_window < 2:
@@ -29,6 +31,10 @@ class VolatilityManagedTrendConfig:
             raise ValueError("maximum_exposure must be in (0, 1]")
         if self.fee_rate < 0.0 or self.slippage_rate < 0.0:
             raise ValueError("cost rates cannot be negative")
+        if self.rebalance_interval < 1:
+            raise ValueError("rebalance_interval must be positive")
+        if not 0.0 <= self.minimum_weight_change <= 1.0:
+            raise ValueError("minimum_weight_change must be in [0, 1]")
 
     @property
     def minimum_history(self) -> int:
@@ -62,8 +68,23 @@ def run_volatility_managed_trend(
     ).clip(lower=0.0, upper=config.maximum_exposure)
     desired_position = (trend_signal * volatility_weight).fillna(0.0)
 
-    # Both trend and volatility estimates are shifted before earning returns.
-    frame["position"] = desired_position.shift(1).fillna(0.0)
+    # Only yesterday's target may be acted on. Risk exits remain daily, while
+    # entries and ordinary resizing can be restricted to scheduled bars and
+    # ignored when the requested change is too small to justify its cost.
+    available_target = desired_position.shift(1).fillna(0.0)
+    current_position = 0.0
+    positions: list[float] = []
+    for offset, target in enumerate(available_target):
+        target = float(target)
+        if target <= 0.0:
+            current_position = 0.0
+        elif (
+            offset % config.rebalance_interval == 0
+            and abs(target - current_position) >= config.minimum_weight_change
+        ):
+            current_position = target
+        positions.append(current_position)
+    frame["position"] = positions
     frame["turnover"] = (
         frame["position"].diff().abs().fillna(frame["position"].abs())
     )
