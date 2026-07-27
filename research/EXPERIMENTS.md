@@ -11,6 +11,7 @@ and must not be described as a pristine future confirmation set for later ideas.
 | EXP-003 | Price above 200-day SMA | Declared once; no fold reselection | Rejected | 21.1% maximum drawdown, 23.1% fold pass rate, all cost scenarios failed |
 | EXP-004 | Price above 200-day SMA with unlevered volatility scaling | Predeclared 10%, 12.5%, and 15% volatility sensitivity set | Rejected | 10% target survived the base gate but failed stressed costs and fold consistency; no target passed all gates |
 | EXP-005 | 12.5% volatility target, rebalanced every 5 days with a 5 percentage-point no-trade buffer | One predeclared cost-control variant compared with daily rebalancing on user-supplied 0050 daily data | Rejected | Turnover fell 32.4% and drawdown improved from 25.8% to 22.1%, but Sharpe was 0.432, fold pass rate was 18.8%, and all cost-stress scenarios failed |
+| EXP-006 | 252-day absolute momentum, checked every 21 trading days | One predeclared monthly low-turnover rule; no parameter search | Rejected | 34.3% maximum drawdown, 0% fold pass rate, lagged buy-and-hold by 250.3 percentage points, and all cost-stress scenarios failed |
 
 Passing an exploratory result would still not authorize live trading. A
 candidate must next survive paper trading on observations that were unavailable
