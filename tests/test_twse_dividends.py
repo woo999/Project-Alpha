@@ -39,3 +39,11 @@ def test_parse_rejects_nonpositive_dividend():
 
     with pytest.raises(ValueError, match="positive"):
         parse_twse_dividend_html(bad, etf_code="0050")
+
+
+def test_parser_accepts_bond_etf_code():
+    bond_html = HTML.replace("0050", "00679B")
+
+    result = parse_twse_dividend_html(bond_html, etf_code="00679B")
+
+    assert len(result) == 2
