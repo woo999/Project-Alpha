@@ -2,12 +2,101 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import math
+from pathlib import Path
+from typing import Iterable
 
 import pandas as pd
 
 
 ACTION_COLUMNS = ("split_ratio", "cash_dividend")
+CSV_COLUMNS = ("date", *ACTION_COLUMNS)
+
+
+@dataclass(frozen=True)
+class CorporateActionCoverage:
+    """Result of checking imported actions against an explicit event manifest."""
+
+    action_count: int
+    dividend_count: int
+    split_count: int
+    missing_dividend_dates: tuple[str, ...]
+    missing_split_dates: tuple[str, ...]
+
+    @property
+    def complete(self) -> bool:
+        return not self.missing_dividend_dates and not self.missing_split_dates
+
+
+def load_corporate_actions_csv(
+    path: str | Path,
+    *,
+    price_index: pd.Index | None = None,
+) -> pd.DataFrame:
+    """Load explicit corporate actions from a strict, chronological CSV.
+
+    Required columns are ``date``, ``split_ratio`` and ``cash_dividend``.
+    Empty cells are rejected rather than interpreted as zero or one, because
+    silently filling an event file can materially overstate backtest returns.
+    """
+    frame = pd.read_csv(path)
+    missing = set(CSV_COLUMNS).difference(frame.columns)
+    if missing:
+        raise ValueError(
+            f"corporate action CSV is missing columns: {sorted(missing)}"
+        )
+    clean = frame.loc[:, CSV_COLUMNS].copy()
+    if clean.empty:
+        raise ValueError("corporate action CSV is empty")
+    if clean.isna().any().any():
+        raise ValueError("corporate action CSV contains empty values")
+    try:
+        clean["date"] = pd.to_datetime(clean["date"], errors="raise")
+    except (TypeError, ValueError) as exc:
+        raise ValueError("corporate action CSV contains an invalid date") from exc
+    clean = clean.set_index("date")
+    comparison_index = clean.index if price_index is None else price_index
+    return validate_corporate_actions(clean, comparison_index)
+
+
+def audit_expected_actions(
+    actions: pd.DataFrame,
+    *,
+    expected_dividend_dates: Iterable[str | pd.Timestamp] = (),
+    expected_split_dates: Iterable[str | pd.Timestamp] = (),
+) -> CorporateActionCoverage:
+    """Check that every event in an independently sourced manifest is present."""
+    clean = validate_corporate_actions(actions, actions.index)
+
+    def normalize(values: Iterable[str | pd.Timestamp], label: str) -> pd.DatetimeIndex:
+        try:
+            dates = pd.DatetimeIndex(pd.to_datetime(list(values), errors="raise"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{label} contains an invalid date") from exc
+        if dates.has_duplicates:
+            raise ValueError(f"{label} contains duplicate dates")
+        return dates
+
+    expected_dividends = normalize(
+        expected_dividend_dates, "expected_dividend_dates"
+    )
+    expected_splits = normalize(expected_split_dates, "expected_split_dates")
+    actual_dividends = clean.index[clean["cash_dividend"] > 0.0]
+    actual_splits = clean.index[clean["split_ratio"] != 1.0]
+    missing_dividends = expected_dividends.difference(actual_dividends)
+    missing_splits = expected_splits.difference(actual_splits)
+    return CorporateActionCoverage(
+        action_count=len(clean),
+        dividend_count=len(actual_dividends),
+        split_count=len(actual_splits),
+        missing_dividend_dates=tuple(
+            date.strftime("%Y-%m-%d") for date in missing_dividends
+        ),
+        missing_split_dates=tuple(
+            date.strftime("%Y-%m-%d") for date in missing_splits
+        ),
+    )
 
 
 def validate_corporate_actions(
@@ -46,8 +135,8 @@ def build_total_return_index(
 ) -> pd.Series:
     """Return a reinvested total-return index normalized to initial_value.
 
-    split_ratio is new shares per old share on the action date.
-    cash_dividend is cash paid per pre-action share on that date.
+    ``split_ratio`` is new shares per old share on the action date.
+    ``cash_dividend`` is cash paid per pre-action share on that date.
     """
     clean_prices = pd.to_numeric(prices, errors="coerce").dropna().astype(float)
     if len(clean_prices) < 2:
