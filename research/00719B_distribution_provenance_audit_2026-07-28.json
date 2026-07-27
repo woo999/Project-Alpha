@@ -1,0 +1,23 @@
+{
+  "symbol": "00719B",
+  "audit_date": "2026-07-28",
+  "expected_distribution_events": 31,
+  "secondary_history_events_matching": 31,
+  "primary_regulatory_events_verified": 1,
+  "primary_regulatory_events_remaining": 30,
+  "verified_event": {
+    "ex_date": "2026-07-21",
+    "cash_dividend": 0.27,
+    "source": "https://mopsov.twse.com.tw/nas/T108/A0000520260717F06.pdf"
+  },
+  "secondary_history_source": "https://goodinfo.tw/tw/StockDividendPolicy.asp?STOCK_ID=00719B",
+  "decision": {
+    "complete_for_historical_research": true,
+    "complete_for_paper_promotion": false,
+    "reason": "Thirty historical events still lack a directly linked primary regulatory filing."
+  },
+  "safety": {
+    "paper_tracking_started": false,
+    "live_ready": false
+  }
+}
