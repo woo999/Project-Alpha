@@ -1,0 +1,48 @@
+{
+  "status": "PRELIMINARY_RESEARCH_ONLY",
+  "warning": "00679B cash distributions were reconstructed from a public secondary record because the official TWSE dividend page did not return a parseable bond-ETF table. These results cannot be promoted to paper trading.",
+  "period": {
+    "start": "2017-01-17",
+    "end": "2026-07-27",
+    "overlapping_observations": 2313,
+    "years": 9.5224,
+    "overlap_fraction": 0.997843
+  },
+  "00679B_data": {
+    "raw_observations": 2318,
+    "cash_distribution_events": 36,
+    "cumulative_total_return": -0.096447,
+    "annualized_return": -0.010594,
+    "maximum_drawdown": -0.461515
+  },
+  "relationship": {
+    "daily_return_correlation": -0.113210
+  },
+  "descriptive_allocations": {
+    "0050_100": {
+      "annualized_return": 0.247177,
+      "sharpe": 1.195573,
+      "maximum_drawdown": -0.339292
+    },
+    "0050_80_00679B_20": {
+      "annualized_return": 0.196957,
+      "sharpe": 1.199163,
+      "maximum_drawdown": -0.313861
+    },
+    "0050_60_00679B_40": {
+      "annualized_return": 0.145692,
+      "sharpe": 1.132380,
+      "maximum_drawdown": -0.289599
+    },
+    "trend_ensemble_to_00679B": {
+      "annualized_return": 0.162925,
+      "sharpe": 0.963844,
+      "maximum_drawdown": -0.315923
+    }
+  },
+  "conclusion": "00679B had mild negative daily correlation with 0050, but its own 46.2% drawdown and negative return made it an inadequate defensive asset in the available period. No tested descriptive allocation met the 20% drawdown ceiling.",
+  "promotion": {
+    "paper_trading_candidate": false,
+    "live_ready": false
+  }
+}
