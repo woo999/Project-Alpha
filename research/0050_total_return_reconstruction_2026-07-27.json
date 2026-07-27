@@ -1,0 +1,41 @@
+{
+  "status": "DATA_RECONSTRUCTION_ONLY",
+  "symbol": "0050",
+  "price_source": "User-provided Mitake daily OHLCV file",
+  "dividend_source": "Taiwan Stock Exchange ETF Dividend Distribution Information",
+  "dividend_source_url": "https://www.twse.com.tw/en/ETFortune-institute/dividendList?startDate=&stkNo=0050",
+  "price_basis": "total_return_reconstructed",
+  "period": {
+    "start": "2006-03-20",
+    "end": "2026-07-27",
+    "observations": 5000
+  },
+  "corporate_actions": {
+    "total": 32,
+    "cash_dividends": 31,
+    "splits": 1,
+    "split_date": "2025-06-18",
+    "split_ratio": 4.0,
+    "manifest_complete": true
+  },
+  "buy_and_hold_reference": {
+    "initial_index": 100.0,
+    "ending_index": 1560.059408,
+    "cumulative_return": 14.60059408,
+    "annualized_return": 0.14451277,
+    "annualized_volatility": 0.20637862,
+    "sharpe_zero_risk_free": 0.774470,
+    "maximum_drawdown": -0.55662610
+  },
+  "validation": {
+    "finite_values": true,
+    "chronological_dates": true,
+    "duplicate_dates": false,
+    "all_action_dates_present_in_prices": true
+  },
+  "promotion": {
+    "eligible_data_basis": true,
+    "paper_trading_candidate": false,
+    "reason": "This report validates the reconstructed data and buy-and-hold reference only; no strategy passed promotion gates."
+  }
+}
