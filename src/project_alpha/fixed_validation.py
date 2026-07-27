@@ -8,7 +8,12 @@ from typing import Any, Callable
 import pandas as pd
 
 from project_alpha.backtest import BacktestConfig, run_long_only_sma
-from project_alpha.benchmark import BenchmarkReport, compare_buy_and_hold
+from project_alpha.benchmark import (
+    BenchmarkCriteria,
+    BenchmarkReport,
+    compare_buy_and_hold,
+    evaluate_benchmark_acceptance,
+)
 from project_alpha.cost_stress import (
     CostStressCriteria,
     CostStressReport,
@@ -48,6 +53,7 @@ class FixedWalkForwardResult:
     aggregate_performance: PerformanceMetrics
     aggregate_decision: GateDecision
     benchmark_report: BenchmarkReport
+    benchmark_decision: GateDecision
     cost_stress_report: CostStressReport
     fold_pass_fraction: float
     positive_fold_fraction: float
@@ -76,6 +82,7 @@ def run_fixed_strategy_walk_forward(
     acceptance_criteria: AcceptanceCriteria | None = None,
     walk_forward_criteria: WalkForwardCriteria | None = None,
     cost_stress_criteria: CostStressCriteria | None = None,
+    benchmark_criteria: BenchmarkCriteria | None = None,
 ) -> FixedWalkForwardResult:
     """Evaluate one unchanged rule over successive unseen periods."""
     if minimum_history < 1:
@@ -139,6 +146,10 @@ def run_fixed_strategy_walk_forward(
         aggregate_performance,
         periods_per_year=periods_per_year,
     )
+    benchmark_decision = evaluate_benchmark_acceptance(
+        benchmark_report,
+        benchmark_criteria,
+    )
     cost_stress_report = evaluate_cost_stress(
         aggregate,
         periods_per_year=periods_per_year,
@@ -155,6 +166,9 @@ def run_fixed_strategy_walk_forward(
     reasons.extend(
         f"cost_stress: {reason}"
         for reason in cost_stress_report.decision.reasons
+    )
+    reasons.extend(
+        f"benchmark: {reason}" for reason in benchmark_decision.reasons
     )
     if len(folds) < rules.minimum_folds:
         reasons.append(f"fold_count {len(folds)} < {rules.minimum_folds}")
@@ -177,6 +191,7 @@ def run_fixed_strategy_walk_forward(
         aggregate_performance=aggregate_performance,
         aggregate_decision=aggregate_decision,
         benchmark_report=benchmark_report,
+        benchmark_decision=benchmark_decision,
         cost_stress_report=cost_stress_report,
         fold_pass_fraction=fold_pass_fraction,
         positive_fold_fraction=positive_fold_fraction,
@@ -196,6 +211,7 @@ def run_fixed_sma_walk_forward(
     acceptance_criteria: AcceptanceCriteria | None = None,
     walk_forward_criteria: WalkForwardCriteria | None = None,
     cost_stress_criteria: CostStressCriteria | None = None,
+    benchmark_criteria: BenchmarkCriteria | None = None,
 ) -> FixedWalkForwardResult:
     """Evaluate one unchanged SMA rule over successive unseen periods."""
     config.validate()
@@ -212,4 +228,5 @@ def run_fixed_sma_walk_forward(
         acceptance_criteria=acceptance_criteria,
         walk_forward_criteria=walk_forward_criteria,
         cost_stress_criteria=cost_stress_criteria,
+        benchmark_criteria=benchmark_criteria,
     )
