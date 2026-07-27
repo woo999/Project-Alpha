@@ -22,3 +22,12 @@ EXP-005 used 5,000 raw 0050 observations from 2006-03-20 through 2026-07-27.
 Prices before the 2025-06-18 1-for-4 split were divided by four to remove the
 mechanical split jump. The source was not dividend-adjusted, so this experiment
 is useful for rejecting the candidate but is not a total-return confirmation.
+
+## Total-return revalidation
+
+On 2026-07-27, EXP-002, EXP-003, EXP-005, EXP-006, and EXP-007 were rerun
+without parameter changes on a 5,000-row 0050 total-return series reconstructed
+from the user-supplied daily prices, 31 official TWSE cash distributions, and
+the 2025 1-for-4 split. All five remained rejected. The strongest aggregate
+Sharpe was 0.993 for EXP-007, but its maximum drawdown was 27.8%, its fold pass
+rate was 0%, and every cost scenario failed the complete acceptance gate.
