@@ -11,8 +11,7 @@ from project_alpha.paper_daily import append_common_daily_bars, load_paper_actio
 from project_alpha.paper_snapshot_io import (
     load_paper_ledger,
     load_snapshot,
-    write_observations,
-    write_snapshot,
+    write_checkpoint,
 )
 
 
@@ -54,8 +53,7 @@ def main() -> None:
         defensive_actions=load_paper_actions(args.defensive_actions),
     )
     if args.write and result.appended_dates:
-        write_observations(ledger.observations, args.observations)
-        write_snapshot(ledger.snapshot(), args.snapshot)
+        write_checkpoint(ledger, args.observations, args.snapshot)
     output = {
         "mode": "paper_only_no_broker",
         "write_requested": args.write,
