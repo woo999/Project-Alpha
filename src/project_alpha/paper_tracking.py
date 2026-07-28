@@ -25,6 +25,7 @@ class CandidateSpec:
     primary_weight: float
     defensive_weight: float
     rebalance_interval_trading_days: int
+    rebalance_anchor: str = "first_forward_observation"
     maximum_drawdown: float = 0.20
     minimum_forward_observations: int = 252
 
@@ -41,6 +42,10 @@ class CandidateSpec:
             raise ValueError("candidate weights cannot be negative")
         if self.rebalance_interval_trading_days < 1:
             raise ValueError("rebalance interval must be positive")
+        if self.rebalance_anchor != "first_forward_observation":
+            raise ValueError(
+                "rebalance_anchor must be 'first_forward_observation'"
+            )
         if not 0 < self.maximum_drawdown < 1:
             raise ValueError("maximum_drawdown must be between 0 and 1")
         if self.minimum_forward_observations < 2:
@@ -52,6 +57,19 @@ class CandidateSpec:
             asdict(self), sort_keys=True, default=str, separators=(",", ":")
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def is_rebalance_observation(self, observation_number: int) -> bool:
+        """Return whether this 1-based forward observation is a rebalance date.
+
+        Observation 1 establishes the frozen target allocation.  Subsequent
+        rebalances occur after each complete interval: 64, 127, ... for a
+        63-trading-day interval.
+        """
+        if observation_number < 1:
+            raise ValueError("observation_number must be positive")
+        return (
+            observation_number - 1
+        ) % self.rebalance_interval_trading_days == 0
 
 
 @dataclass(frozen=True)
