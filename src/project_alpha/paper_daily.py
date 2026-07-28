@@ -75,6 +75,12 @@ def validate_action_freshness(
         raise ValueError(
             f"{label} contains an event after its verification date"
         )
+    if verified_through > required_through:
+        raise ValueError(
+            f"{label} corporate-action verification date "
+            f"{verified_through.isoformat()} exceeds the newest market date "
+            f"{required_through.isoformat()}; future coverage cannot be asserted"
+        )
     if verified_through < required_through:
         raise ValueError(
             f"{label} corporate actions are verified only through "
