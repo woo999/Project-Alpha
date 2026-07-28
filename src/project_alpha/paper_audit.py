@@ -47,6 +47,8 @@ def build_batch_audit(
     defensive_actions: dict[date, PaperAction],
     primary_actions_verified_through: date,
     defensive_actions_verified_through: date,
+    primary_action_verification_path: Path | None = None,
+    defensive_action_verification_path: Path | None = None,
 ) -> dict[str, object]:
     """Build a stable audit document that can be committed with the ledger."""
     if observation_count_after - observation_count_before != len(appended_dates):
@@ -69,6 +71,35 @@ def build_batch_audit(
             "last_event_date": dates[-1].isoformat(),
         }
 
+    inputs = {
+        "primary_export": {
+            **asdict(file_evidence(primary_export_path)),
+            **coverage(primary_bars),
+        },
+        "defensive_export": {
+            **asdict(file_evidence(defensive_export_path)),
+            **coverage(defensive_bars),
+        },
+        "primary_actions": {
+            **asdict(file_evidence(primary_actions_path)),
+            **action_coverage(primary_actions),
+            "verified_through": primary_actions_verified_through.isoformat(),
+        },
+        "defensive_actions": {
+            **asdict(file_evidence(defensive_actions_path)),
+            **action_coverage(defensive_actions),
+            "verified_through": defensive_actions_verified_through.isoformat(),
+        },
+    }
+    if primary_action_verification_path is not None:
+        inputs["primary_action_verification"] = asdict(
+            file_evidence(primary_action_verification_path)
+        )
+    if defensive_action_verification_path is not None:
+        inputs["defensive_action_verification"] = asdict(
+            file_evidence(defensive_action_verification_path)
+        )
+
     return {
         "format_version": "paper-source-audit-v1",
         "candidate_id": candidate_id,
@@ -78,26 +109,7 @@ def build_batch_audit(
         "appended_dates": [value.isoformat() for value in appended_dates],
         "prior_ledger_hash": prior_ledger_hash,
         "new_ledger_hash": new_ledger_hash,
-        "inputs": {
-            "primary_export": {
-                **asdict(file_evidence(primary_export_path)),
-                **coverage(primary_bars),
-            },
-            "defensive_export": {
-                **asdict(file_evidence(defensive_export_path)),
-                **coverage(defensive_bars),
-            },
-            "primary_actions": {
-                **asdict(file_evidence(primary_actions_path)),
-                **action_coverage(primary_actions),
-                "verified_through": primary_actions_verified_through.isoformat(),
-            },
-            "defensive_actions": {
-                **asdict(file_evidence(defensive_actions_path)),
-                **action_coverage(defensive_actions),
-                "verified_through": defensive_actions_verified_through.isoformat(),
-            },
-        },
+        "inputs": inputs,
         "safety": {
             "broker_connected": False,
             "orders_placed": False,
