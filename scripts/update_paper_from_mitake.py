@@ -10,6 +10,7 @@ from project_alpha.mitake import common_bars_after, load_mitake_daily_export
 from project_alpha.paper_daily import append_common_daily_bars, load_paper_actions
 from project_alpha.paper_snapshot_io import (
     load_paper_ledger,
+    load_snapshot,
     write_observations,
     write_snapshot,
 )
@@ -37,6 +38,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     ledger = load_paper_ledger(args.preregistration, args.observations)
+    ledger.verify_snapshot(load_snapshot(args.snapshot))
     last_observed_on = ledger.observations[-1].observed_on
     primary = load_mitake_daily_export(
         args.primary_export, expected_symbol=ledger.spec.primary_symbol
