@@ -15,7 +15,7 @@ import math
 import os
 from pathlib import Path
 import tempfile
-from typing import Iterable
+from typing import Iterable, Mapping
 
 from project_alpha.paper_tracking import (
     CandidateSpec,
@@ -245,6 +245,8 @@ def write_checkpoint(
     ledger: PaperLedger,
     observations_path: Path,
     snapshot_path: Path,
+    *,
+    additional_text_files: Mapping[Path, str] | None = None,
 ) -> None:
     """Commit a ledger and its matching snapshot with runtime-error rollback.
 
@@ -253,38 +255,41 @@ def write_checkpoint(
     its exact previous contents.  This protects against ordinary I/O failures;
     the snapshot guard still detects an abrupt process or machine failure.
     """
-    observation_text = _serialize_observations(ledger.observations)
-    snapshot_text = ledger.snapshot().to_json() + "\n"
-    old_observations = (
-        observations_path.read_text(encoding="utf-8")
-        if observations_path.exists()
-        else None
-    )
-    old_snapshot = (
-        snapshot_path.read_text(encoding="utf-8")
-        if snapshot_path.exists()
-        else None
-    )
-    observation_stage = _stage_text(
-        observations_path, observation_text, newline=""
-    )
-    snapshot_stage = _stage_text(snapshot_path, snapshot_text, newline="\n")
-    observation_replaced = False
-    snapshot_replaced = False
+    documents = {
+        observations_path: (_serialize_observations(ledger.observations), ""),
+        snapshot_path: (ledger.snapshot().to_json() + "\n", "\n"),
+    }
+    for path, content in (additional_text_files or {}).items():
+        if path in documents:
+            raise ValueError("additional checkpoint paths must be unique")
+        documents[path] = (content, "\n")
+    previous = {
+        path: (
+            path.read_text(encoding="utf-8")
+            if path.exists()
+            else None
+        )
+        for path in documents
+    }
+    staged = {
+        path: _stage_text(path, content, newline=newline)
+        for path, (content, newline) in documents.items()
+    }
+    replaced: list[Path] = []
     try:
-        _replace_file(observation_stage, observations_path)
-        observation_replaced = True
-        _replace_file(snapshot_stage, snapshot_path)
-        snapshot_replaced = True
+        for destination, source in staged.items():
+            _replace_file(source, destination)
+            replaced.append(destination)
     except BaseException:
-        if observation_replaced:
-            _restore_text(observations_path, old_observations, newline="")
-        if snapshot_replaced:
-            _restore_text(snapshot_path, old_snapshot, newline="\n")
+        for destination in reversed(replaced):
+            newline = documents[destination][1]
+            _restore_text(
+                destination, previous[destination], newline=newline
+            )
         raise
     finally:
-        observation_stage.unlink(missing_ok=True)
-        snapshot_stage.unlink(missing_ok=True)
+        for temporary_path in staged.values():
+            temporary_path.unlink(missing_ok=True)
 
 
 def _serialize_observations(
