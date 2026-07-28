@@ -23,9 +23,23 @@ def candidate(minimum_forward_observations=3):
     )
 
 
-def observation(day, value):
+def observation(day, value, turnover=0.0, costs=0.0):
     marked_price = value / 100
-    return PaperObservation(day, value, marked_price, marked_price, 60, 40, 0.0)
+    return PaperObservation(
+        day,
+        value,
+        marked_price,
+        marked_price,
+        60,
+        40,
+        0.0,
+        turnover_today=turnover,
+        charged_transaction_costs_today=costs,
+    )
+
+
+def initial_observation(day, value):
+    return observation(day, value, turnover=100.0, costs=0.4)
 
 
 def test_fingerprint_is_stable_and_changes_with_rule():
@@ -54,17 +68,33 @@ def test_observation_must_reconcile_positions_and_cash():
 def test_rebalance_observation_must_match_frozen_weights():
     ledger = PaperLedger(candidate())
     off_target = PaperObservation(
-        date(2026, 7, 28), 100.0, 1.0, 1.0, 70, 30, 0.0
+        date(2026, 7, 28), 100.0, 1.0, 1.0, 70, 30, 0.0, 100.0, 0.4
     )
     with pytest.raises(ValueError, match="frozen target weights"):
         ledger.append(off_target)
+
+
+def test_hidden_turnover_and_undercharged_costs_are_rejected():
+    ledger = PaperLedger(candidate())
+    ledger.append(initial_observation(date(2026, 7, 28), 100.0))
+    hidden_trade = PaperObservation(
+        date(2026, 7, 29), 100.0, 1.0, 1.0, 60, 40, 0.0, 1.0, 0.004
+    )
+    with pytest.raises(ValueError, match="forbidden"):
+        ledger.append(hidden_trade)
+
+    undercharged = PaperObservation(
+        date(2026, 7, 28), 100.0, 1.0, 1.0, 60, 40, 0.0, 100.0, 0.39
+    )
+    with pytest.raises(ValueError, match="minimum rate"):
+        PaperLedger(candidate()).append(undercharged)
 
 
 def test_historical_or_duplicate_observations_are_rejected():
     ledger = PaperLedger(candidate())
     with pytest.raises(ValueError, match="after historical cutoff"):
         ledger.append(observation(date(2026, 7, 27), 1.0))
-    ledger.append(observation(date(2026, 7, 28), 1.0))
+    ledger.append(initial_observation(date(2026, 7, 28), 1.0))
     with pytest.raises(ValueError, match="strictly chronological"):
         ledger.append(observation(date(2026, 7, 28), 1.01))
 
@@ -73,7 +103,7 @@ def test_candidate_cannot_pass_before_minimum_forward_history():
     ledger = PaperLedger(candidate())
     ledger.extend(
         [
-            observation(date(2026, 7, 28), 1.0),
+            initial_observation(date(2026, 7, 28), 1.0),
             observation(date(2026, 7, 29), 1.01),
         ]
     )
@@ -84,9 +114,10 @@ def test_candidate_cannot_pass_before_minimum_forward_history():
 def test_candidate_passes_only_after_forward_return_and_drawdown_gates():
     ledger = PaperLedger(candidate())
     start = date(2026, 7, 28)
+    ledger.append(initial_observation(start, 1.0))
     ledger.extend(
         observation(start + timedelta(days=offset), value)
-        for offset, value in enumerate((1.0, 0.95, 1.05))
+        for offset, value in enumerate((0.95, 1.05), start=1)
     )
     decision = ledger.evaluate()
     assert decision.eligible is True
