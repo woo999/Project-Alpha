@@ -148,6 +148,21 @@ class PaperDecision:
     reasons: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class PaperSnapshot:
+    """Deterministic checkpoint that detects later rule or record changes."""
+
+    format_version: str
+    candidate_fingerprint: str
+    observation_count: int
+    last_observed_on: date | None
+    ledger_hash: str
+    decision: PaperDecision
+
+    def to_dict(self) -> dict[str, object]:
+        return asdict(self)
+
+
 @dataclass
 class PaperLedger:
     spec: CandidateSpec
@@ -189,6 +204,48 @@ class PaperLedger:
     def extend(self, observations: Iterable[PaperObservation]) -> None:
         for observation in observations:
             self.append(observation)
+
+    @property
+    def ledger_hash(self) -> str:
+        """Hash the frozen rules and every observation in chronological order.
+
+        Publishing this digest in version control makes later edits detectable:
+        changing a rule, an old observation, or the observation order produces
+        a different digest.  This is an integrity check, not a digital signature.
+        """
+        digest = hashlib.sha256(
+            f"paper-ledger-v1:{self.spec.fingerprint}".encode("utf-8")
+        ).hexdigest()
+        for observation in self.observations:
+            payload = json.dumps(
+                asdict(observation),
+                sort_keys=True,
+                default=str,
+                separators=(",", ":"),
+            )
+            digest = hashlib.sha256(
+                f"{digest}\n{payload}".encode("utf-8")
+            ).hexdigest()
+        return digest
+
+    def snapshot(self) -> PaperSnapshot:
+        return PaperSnapshot(
+            format_version="paper-ledger-v1",
+            candidate_fingerprint=self.spec.fingerprint,
+            observation_count=len(self.observations),
+            last_observed_on=(
+                self.observations[-1].observed_on if self.observations else None
+            ),
+            ledger_hash=self.ledger_hash,
+            decision=self.evaluate(),
+        )
+
+    def verify_snapshot(self, snapshot: PaperSnapshot) -> None:
+        """Raise if a checkpoint no longer matches the ledger exactly."""
+        if snapshot != self.snapshot():
+            raise ValueError(
+                "paper snapshot does not match current frozen rules and observations"
+            )
 
     def evaluate(self) -> PaperDecision:
         count = len(self.observations)
