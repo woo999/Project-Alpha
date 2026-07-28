@@ -48,9 +48,6 @@ def load_mitake_daily_export(
         prices = (open_price, high, low, close)
         if any(not math.isfinite(value) or value <= 0 for value in prices):
             raise ValueError(f"non-positive or non-finite price at line {line_number}")
-        # The export can contain legacy opening-auction values outside the
-        # reported intraday high/low.  Close is the paper-accounting input, so
-        # require only a coherent high/low range containing the close.
         if high < max(low, close) or low > min(high, close):
             raise ValueError(f"inconsistent OHLC values at line {line_number}")
         if volume < 0:
@@ -76,6 +73,31 @@ def load_mitake_daily_export(
     return tuple(bars)
 
 
+def common_bars_after(
+    primary: tuple[MitakeDailyBar, ...],
+    defensive: tuple[MitakeDailyBar, ...],
+    *,
+    after: date,
+) -> tuple[tuple[MitakeDailyBar, MitakeDailyBar], ...]:
+    """Return every common bar after a cutoff in strict chronological order."""
+    primary_by_date = {bar.observed_on: bar for bar in primary}
+    defensive_by_date = {bar.observed_on: bar for bar in defensive}
+    primary_dates = {value for value in primary_by_date if value > after}
+    defensive_dates = {value for value in defensive_by_date if value > after}
+    if primary_dates != defensive_dates:
+        primary_only = sorted(primary_dates - defensive_dates)
+        defensive_only = sorted(defensive_dates - primary_dates)
+        raise ValueError(
+            "Mitake exports have asymmetric dates after cutoff: "
+            f"primary_only={primary_only}, defensive_only={defensive_only}"
+        )
+    common = sorted(primary_dates)
+    return tuple(
+        (primary_by_date[date_value], defensive_by_date[date_value])
+        for date_value in common
+    )
+
+
 def latest_common_bar(
     primary: tuple[MitakeDailyBar, ...],
     defensive: tuple[MitakeDailyBar, ...],
@@ -83,14 +105,7 @@ def latest_common_bar(
     after: date,
 ) -> tuple[MitakeDailyBar, MitakeDailyBar]:
     """Return the latest common date after a frozen cutoff."""
-    primary_by_date = {bar.observed_on: bar for bar in primary}
-    defensive_by_date = {bar.observed_on: bar for bar in defensive}
-    common = sorted(
-        date_value
-        for date_value in primary_by_date.keys() & defensive_by_date.keys()
-        if date_value > after
-    )
+    common = common_bars_after(primary, defensive, after=after)
     if not common:
         raise ValueError("Mitake exports contain no common date after cutoff")
-    latest = common[-1]
-    return primary_by_date[latest], defensive_by_date[latest]
+    return common[-1]
