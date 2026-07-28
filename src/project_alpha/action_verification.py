@@ -28,12 +28,43 @@ class ActionVerification:
     source_url: str
 
 
+def validate_official_source_url(source_url: str) -> None:
+    parsed = urlparse(source_url) if isinstance(source_url, str) else None
+    if (
+        parsed is None
+        or parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.hostname.lower() not in OFFICIAL_ACTION_SOURCE_HOSTS
+    ):
+        raise ValueError("action verification source must be an approved official URL")
+
+
 def sha256_file(path: str | Path) -> str:
     digest = hashlib.sha256()
     with Path(path).open("rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def build_action_verification(
+    *,
+    symbol: str,
+    verified_through: date,
+    action_path: str | Path,
+    source_url: str,
+) -> dict[str, str]:
+    """Build deterministic proof content for a reviewed official-source query."""
+    if not symbol or not symbol.strip() or symbol != symbol.strip():
+        raise ValueError("symbol must be a non-empty trimmed string")
+    validate_official_source_url(source_url)
+    return {
+        "format_version": "action-verification-v1",
+        "symbol": symbol,
+        "verified_through": verified_through.isoformat(),
+        "action_file_sha256": sha256_file(action_path),
+        "source_url": source_url,
+    }
 
 
 def load_action_verification(
@@ -67,14 +98,7 @@ def load_action_verification(
     if claimed_hash.lower() != sha256_file(action_path):
         raise ValueError("action verification does not match action file SHA-256")
     source_url = payload["source_url"]
-    parsed = urlparse(source_url) if isinstance(source_url, str) else None
-    if (
-        parsed is None
-        or parsed.scheme != "https"
-        or not parsed.hostname
-        or parsed.hostname.lower() not in OFFICIAL_ACTION_SOURCE_HOSTS
-    ):
-        raise ValueError("action verification source must be an approved official URL")
+    validate_official_source_url(source_url)
     return ActionVerification(
         symbol=expected_symbol,
         verified_through=verified_through,
