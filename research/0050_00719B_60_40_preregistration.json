@@ -11,6 +11,8 @@
     "00719B": 0.40
   },
   "rebalance_interval_trading_days": 63,
+  "rebalance_anchor": "first_forward_observation",
+  "rebalance_observation_numbers": "1,64,127,...",
   "leverage": false,
   "minimum_forward_observations": 252,
   "maximum_forward_drawdown": 0.20,
