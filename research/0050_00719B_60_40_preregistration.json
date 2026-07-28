@@ -25,7 +25,7 @@
   "current_state": "PAPER_TRACKING_ACTIVE",
   "paper_tracking_started": true,
   "paper_tracking_activated_on": "2026-07-28",
-  "forward_observations_recorded": 0,
+  "forward_observations_recorded": 1,
   "live_ready": false,
   "notes": [
     "All observations through 2026-07-27 are considered inspected historical data.",
