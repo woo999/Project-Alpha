@@ -66,3 +66,23 @@ adjusted ETF prices and ETF-specific costs.
 Research results are not guarantees of future returns. Transaction costs,
 slippage, liquidity, and out-of-sample validation must be included before any
 strategy is considered for live testing.
+
+## Offline paper-ledger checkpoint
+
+After a preregistration is explicitly marked `PAPER_TRACKING_ACTIVE`, validate
+the local observation CSV and write a deterministic, tamper-evident checkpoint:
+
+```powershell
+$env:PYTHONPATH = "src"
+python scripts\snapshot_paper_ledger.py `
+  research\0050_00719B_60_40_preregistration.json `
+  data\paper_observations.csv `
+  research\paper_snapshot.json
+```
+
+The CSV schema is fixed to `observed_on, portfolio_value, primary_close,
+defensive_close, primary_units, defensive_units, cash_balance, turnover_today,
+charged_transaction_costs_today`. The command refuses blocked candidates,
+historical or duplicate dates, unreconciled positions, off-schedule turnover,
+understated costs, and off-target rebalance weights. It reads and writes local
+files only and cannot connect to a broker or place orders.
