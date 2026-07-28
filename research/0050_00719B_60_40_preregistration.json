@@ -17,6 +17,7 @@
   "minimum_transaction_cost_rate": 0.004,
   "paper_observation_accounting": "integer units plus non-negative cash must reconcile to portfolio value",
   "trading_restriction": "turnover is permitted only on frozen rebalance observations and must include at least 0.4% charged costs",
+  "paper_record_integrity": "each checkpoint uses a deterministic SHA-256 chain over the frozen candidate fingerprint and every chronological observation; any rule, value, or order change invalidates the checkpoint",
   "leverage": false,
   "minimum_forward_observations": 252,
   "maximum_forward_drawdown": 0.20,
