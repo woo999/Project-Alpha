@@ -6,12 +6,14 @@ capability.
 
 from __future__ import annotations
 
+from dataclasses import asdict
 import csv
 from datetime import date
 import json
 import os
 from pathlib import Path
 import tempfile
+from typing import Iterable
 
 from project_alpha.paper_tracking import (
     CandidateSpec,
@@ -128,6 +130,33 @@ def load_paper_ledger(
     ledger = PaperLedger(load_preregistered_candidate(preregistration_path))
     ledger.extend(load_observations(observations_path))
     return ledger
+
+
+def write_observations(
+    observations: Iterable[PaperObservation],
+    output_path: Path,
+) -> None:
+    """Atomically replace a fully validated paper observation CSV."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=output_path.parent,
+        prefix=f".{output_path.name}.",
+        suffix=".tmp",
+        text=True,
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
+            writer = csv.DictWriter(handle, fieldnames=OBSERVATION_COLUMNS)
+            writer.writeheader()
+            for observation in observations:
+                writer.writerow(asdict(observation))
+            handle.flush()
+            os.fsync(handle.fileno())
+        temporary_path.replace(output_path)
+    except BaseException:
+        temporary_path.unlink(missing_ok=True)
+        raise
 
 
 def write_snapshot(snapshot: PaperSnapshot, output_path: Path) -> None:
