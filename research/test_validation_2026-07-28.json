@@ -1,0 +1,33 @@
+{
+  "validated_commit": "ea89ebb03325e3a8a31ec97050c051b6045f7a39",
+  "validation_mode": "offline_pytest_compatibility_runner",
+  "official_pytest_executed": false,
+  "official_pytest_blocker": "PyPI access was blocked by the execution environment proxy.",
+  "scope": {
+    "test_files": 24,
+    "test_functions": 88,
+    "expanded_test_cases": 104
+  },
+  "results": {
+    "passed": 104,
+    "failed": 0,
+    "python_compileall_passed": true
+  },
+  "supported_pytest_features_emulated": [
+    "pytest.raises",
+    "pytest.approx",
+    "pytest.mark.parametrize",
+    "tmp_path",
+    "capsys"
+  ],
+  "limitations": [
+    "This result is not an official pytest run.",
+    "Pytest collection hooks, plugins, warnings handling, and fixture lifecycle were not exercised.",
+    "The compatibility runner was temporary and was not added to the production repository."
+  ],
+  "project_stage": {
+    "historical_research": "provisional_pass",
+    "paper_tracking": "not_started",
+    "live_readiness": "not_eligible"
+  }
+}
