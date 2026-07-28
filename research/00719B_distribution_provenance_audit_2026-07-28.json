@@ -3,26 +3,17 @@
   "audit_date": "2026-07-28",
   "expected_distribution_events": 31,
   "secondary_history_events_matching": 31,
-  "primary_source_events_verified": 22,
-  "primary_source_events_remaining": 9,
-  "primary_verification_coverage": 0.7096774194,
-  "missing_primary_evidence": [
-    {"ex_date": "2019-01-22", "cash_dividend": 0.08},
-    {"ex_date": "2019-04-23", "cash_dividend": 0.15},
-    {"ex_date": "2019-07-19", "cash_dividend": 0.15},
-    {"ex_date": "2019-10-23", "cash_dividend": 0.08},
-    {"ex_date": "2020-01-31", "cash_dividend": 0.13},
-    {"ex_date": "2020-04-23", "cash_dividend": 0.02},
-    {"ex_date": "2020-10-21", "cash_dividend": 0.02},
-    {"ex_date": "2021-01-19", "cash_dividend": 0.02},
-    {"ex_date": "2023-04-21", "cash_dividend": 0.32}
-  ],
+  "primary_source_events_verified": 31,
+  "primary_source_events_remaining": 0,
+  "primary_verification_coverage": 1.0,
+  "missing_primary_evidence": [],
   "primary_evidence_manifest": "research/00719B_primary_distribution_evidence_2026-07-28.csv",
+  "tpex_api_evidence": "research/00719B_tpex_exright_primary_evidence_2019_2026.json",
   "secondary_history_source": "https://goodinfo.tw/tw/StockDividendPolicy.asp?STOCK_ID=00719B",
   "decision": {
     "complete_for_historical_research": true,
-    "complete_for_paper_promotion": false,
-    "reason": "Nine historical events still lack a directly linked first-party, regulatory, or industry-association filing."
+    "complete_for_paper_promotion": true,
+    "reason": "All 31 historical distributions match official TPEx dated calculation records or previously verified first-party filings."
   },
   "safety": {
     "paper_tracking_started": false,
