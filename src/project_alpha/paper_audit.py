@@ -45,6 +45,8 @@ def build_batch_audit(
     defensive_bars: tuple[MitakeDailyBar, ...],
     primary_actions: dict[date, PaperAction],
     defensive_actions: dict[date, PaperAction],
+    primary_actions_verified_through: date,
+    defensive_actions_verified_through: date,
 ) -> dict[str, object]:
     """Build a stable audit document that can be committed with the ledger."""
     if observation_count_after - observation_count_before != len(appended_dates):
@@ -88,10 +90,12 @@ def build_batch_audit(
             "primary_actions": {
                 **asdict(file_evidence(primary_actions_path)),
                 **action_coverage(primary_actions),
+                "verified_through": primary_actions_verified_through.isoformat(),
             },
             "defensive_actions": {
                 **asdict(file_evidence(defensive_actions_path)),
                 **action_coverage(defensive_actions),
+                "verified_through": defensive_actions_verified_through.isoformat(),
             },
         },
         "safety": {
