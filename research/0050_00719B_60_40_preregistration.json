@@ -13,6 +13,8 @@
   "rebalance_interval_trading_days": 63,
   "rebalance_anchor": "first_forward_observation",
   "rebalance_observation_numbers": "1,64,127,...",
+  "rebalance_weight_tolerance": 0.01,
+  "paper_observation_accounting": "integer units plus non-negative cash must reconcile to portfolio value",
   "leverage": false,
   "minimum_forward_observations": 252,
   "maximum_forward_drawdown": 0.20,
