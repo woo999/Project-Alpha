@@ -123,3 +123,47 @@ def test_candidate_passes_only_after_forward_return_and_drawdown_gates():
     assert decision.eligible is True
     assert decision.passed is True
     assert decision.maximum_drawdown == pytest.approx(-0.05)
+
+
+def test_snapshot_is_stable_and_detects_record_tampering():
+    start = date(2026, 7, 28)
+    ledger = PaperLedger(candidate())
+    ledger.extend(
+        [
+            initial_observation(start, 100.0),
+            observation(start + timedelta(days=1), 101.0),
+        ]
+    )
+    snapshot = ledger.snapshot()
+
+    assert snapshot == ledger.snapshot()
+    assert snapshot.observation_count == 2
+    assert snapshot.last_observed_on == start + timedelta(days=1)
+    assert snapshot.candidate_fingerprint == candidate().fingerprint
+    assert len(snapshot.ledger_hash) == 64
+    ledger.verify_snapshot(snapshot)
+
+    changed = PaperLedger(candidate())
+    changed.extend(
+        [
+            initial_observation(start, 100.0),
+            observation(start + timedelta(days=1), 101.01),
+        ]
+    )
+    assert changed.ledger_hash != snapshot.ledger_hash
+    with pytest.raises(ValueError, match="does not match"):
+        changed.verify_snapshot(snapshot)
+
+
+def test_snapshot_becomes_stale_after_append_or_rule_change():
+    start = date(2026, 7, 28)
+    ledger = PaperLedger(candidate())
+    ledger.append(initial_observation(start, 100.0))
+    snapshot = ledger.snapshot()
+    ledger.append(observation(start + timedelta(days=1), 101.0))
+    with pytest.raises(ValueError, match="does not match"):
+        ledger.verify_snapshot(snapshot)
+
+    changed_rule = PaperLedger(candidate(minimum_forward_observations=4))
+    changed_rule.append(initial_observation(start, 100.0))
+    assert changed_rule.ledger_hash != snapshot.ledger_hash
