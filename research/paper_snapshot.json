@@ -1,0 +1,17 @@
+{
+  "candidate_fingerprint": "030fe5731c49e01c2ca6ba4d3a039414f9b002a19a6aec31925cd21bfeed80cb",
+  "decision": {
+    "cumulative_return": null,
+    "eligible": false,
+    "maximum_drawdown": null,
+    "observation_count": 1,
+    "passed": false,
+    "reasons": [
+      "insufficient forward observations"
+    ]
+  },
+  "format_version": "paper-ledger-v1",
+  "last_observed_on": "2026-07-28",
+  "ledger_hash": "b9c6f0e24963e2a582e5f2518eac055a99b0b30cd53d4b5f90729553414cdb38",
+  "observation_count": 1
+}
