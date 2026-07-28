@@ -162,6 +162,15 @@ class PaperSnapshot:
     def to_dict(self) -> dict[str, object]:
         return asdict(self)
 
+    def to_json(self) -> str:
+        """Return a stable, version-control-friendly checkpoint document."""
+        return json.dumps(
+            self.to_dict(),
+            sort_keys=True,
+            default=str,
+            indent=2,
+        )
+
 
 @dataclass
 class PaperLedger:
