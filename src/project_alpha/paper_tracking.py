@@ -27,6 +27,7 @@ class CandidateSpec:
     rebalance_interval_trading_days: int
     rebalance_anchor: str = "first_forward_observation"
     rebalance_weight_tolerance: float = 0.01
+    minimum_transaction_cost_rate: float = 0.004
     maximum_drawdown: float = 0.20
     minimum_forward_observations: int = 252
 
@@ -49,6 +50,8 @@ class CandidateSpec:
             )
         if not 0 < self.rebalance_weight_tolerance < 0.10:
             raise ValueError("rebalance_weight_tolerance must be in (0, 0.10)")
+        if not 0 <= self.minimum_transaction_cost_rate < 0.10:
+            raise ValueError("minimum_transaction_cost_rate must be in [0, 0.10)")
         if not 0 < self.maximum_drawdown < 1:
             raise ValueError("maximum_drawdown must be between 0 and 1")
         if self.minimum_forward_observations < 2:
@@ -84,6 +87,8 @@ class PaperObservation:
     primary_units: int
     defensive_units: int
     cash_balance: float
+    turnover_today: float = 0.0
+    charged_transaction_costs_today: float = 0.0
 
     def __post_init__(self) -> None:
         values = (
@@ -100,6 +105,14 @@ class PaperObservation:
             raise ValueError("paper position units cannot be negative")
         if not math.isfinite(self.cash_balance) or self.cash_balance < 0:
             raise ValueError("cash_balance must be finite and non-negative")
+        trading_values = (
+            self.turnover_today,
+            self.charged_transaction_costs_today,
+        )
+        if any(not math.isfinite(value) or value < 0 for value in trading_values):
+            raise ValueError("turnover and transaction costs must be non-negative")
+        if self.turnover_today == 0 and self.charged_transaction_costs_today != 0:
+            raise ValueError("transaction costs require positive turnover")
         reconstructed = (
             self.primary_units * self.primary_close
             + self.defensive_units * self.defensive_close
@@ -146,7 +159,21 @@ class PaperLedger:
         if self.observations and observation.observed_on <= self.observations[-1].observed_on:
             raise ValueError("paper observations must be strictly chronological")
         observation_number = len(self.observations) + 1
-        if self.spec.is_rebalance_observation(observation_number):
+        is_rebalance = self.spec.is_rebalance_observation(observation_number)
+        if not is_rebalance and observation.turnover_today != 0:
+            raise ValueError("turnover is forbidden outside rebalance observations")
+        if observation_number == 1 and observation.turnover_today <= 0:
+            raise ValueError("initial allocation must record positive turnover")
+        if observation.turnover_today > 0:
+            minimum_cost = (
+                observation.turnover_today
+                * self.spec.minimum_transaction_cost_rate
+            )
+            if observation.charged_transaction_costs_today + 1e-12 < minimum_cost:
+                raise ValueError(
+                    "charged transaction costs are below the frozen minimum rate"
+                )
+        if is_rebalance:
             tolerance = self.spec.rebalance_weight_tolerance
             if (
                 abs(observation.primary_weight - self.spec.primary_weight) > tolerance
