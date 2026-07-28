@@ -42,9 +42,12 @@ def test_batch_audit_links_sources_and_ledger_hashes(tmp_path):
         defensive_bars=(bar(day),),
         primary_actions={day: PaperAction(1.0, 0.0)},
         defensive_actions={day: PaperAction(1.0, 0.0)},
+        primary_actions_verified_through=day,
+        defensive_actions_verified_through=day,
     )
     assert audit["prior_ledger_hash"] == "1" * 64
     assert audit["new_ledger_hash"] == "2" * 64
     assert audit["appended_dates"] == ["2026-07-29"]
     assert audit["inputs"]["primary_export"]["byte_count"] == 1
+    assert audit["inputs"]["primary_actions"]["verified_through"] == "2026-07-29"
     assert audit["safety"]["orders_placed"] is False
