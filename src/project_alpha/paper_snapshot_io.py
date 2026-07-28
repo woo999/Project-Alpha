@@ -10,6 +10,7 @@ from dataclasses import asdict
 import csv
 from datetime import date
 import json
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -18,6 +19,7 @@ from typing import Iterable
 from project_alpha.paper_tracking import (
     CandidateSpec,
     PaperLedger,
+    PaperDecision,
     PaperObservation,
     PaperSnapshot,
 )
@@ -130,6 +132,99 @@ def load_paper_ledger(
     ledger = PaperLedger(load_preregistered_candidate(preregistration_path))
     ledger.extend(load_observations(observations_path))
     return ledger
+
+
+def load_snapshot(path: Path) -> PaperSnapshot:
+    """Strictly load a published checkpoint for pre-update verification."""
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError("paper snapshot is missing or invalid JSON") from exc
+    expected = {
+        "format_version",
+        "candidate_fingerprint",
+        "observation_count",
+        "last_observed_on",
+        "ledger_hash",
+        "decision",
+    }
+    if set(document) != expected:
+        raise ValueError("paper snapshot fields do not match the frozen schema")
+    decision_document = document["decision"]
+    decision_fields = {
+        "passed",
+        "eligible",
+        "observation_count",
+        "cumulative_return",
+        "maximum_drawdown",
+        "reasons",
+    }
+    if not isinstance(decision_document, dict) or set(decision_document) != decision_fields:
+        raise ValueError("paper snapshot decision fields do not match schema")
+
+    def parse_count(value: object, label: str) -> int:
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(f"{label} must be a non-negative integer")
+        return value
+
+    def parse_optional_float(value: object, label: str) -> float | None:
+        if value is None:
+            return None
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"{label} must be finite or null")
+        result = float(value)
+        if not math.isfinite(result):
+            raise ValueError(f"{label} must be finite or null")
+        return result
+
+    for label in ("passed", "eligible"):
+        if not isinstance(decision_document[label], bool):
+            raise ValueError(f"snapshot decision {label} must be boolean")
+    reasons = decision_document["reasons"]
+    if not isinstance(reasons, list) or not all(
+        isinstance(value, str) and value for value in reasons
+    ):
+        raise ValueError("snapshot decision reasons must be non-empty strings")
+    last_observed_on = document["last_observed_on"]
+    if last_observed_on is not None:
+        try:
+            last_observed_on = date.fromisoformat(last_observed_on)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("snapshot last_observed_on is invalid") from exc
+    for label in ("candidate_fingerprint", "ledger_hash"):
+        value = document[label]
+        if (
+            not isinstance(value, str)
+            or len(value) != 64
+            or any(character not in "0123456789abcdef" for character in value)
+        ):
+            raise ValueError(f"snapshot {label} must be a SHA-256 hex digest")
+    return PaperSnapshot(
+        format_version=str(document["format_version"]),
+        candidate_fingerprint=document["candidate_fingerprint"],
+        observation_count=parse_count(
+            document["observation_count"], "snapshot observation_count"
+        ),
+        last_observed_on=last_observed_on,
+        ledger_hash=document["ledger_hash"],
+        decision=PaperDecision(
+            passed=decision_document["passed"],
+            eligible=decision_document["eligible"],
+            observation_count=parse_count(
+                decision_document["observation_count"],
+                "snapshot decision observation_count",
+            ),
+            cumulative_return=parse_optional_float(
+                decision_document["cumulative_return"],
+                "snapshot decision cumulative_return",
+            ),
+            maximum_drawdown=parse_optional_float(
+                decision_document["maximum_drawdown"],
+                "snapshot decision maximum_drawdown",
+            ),
+            reasons=tuple(reasons),
+        ),
+    )
 
 
 def write_observations(
