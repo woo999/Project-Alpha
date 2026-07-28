@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import argparse
+from datetime import date
 import json
 from pathlib import Path
 
 from project_alpha.mitake import common_bars_after, load_mitake_daily_export
 from project_alpha.paper_audit import build_batch_audit
-from project_alpha.paper_daily import append_common_daily_bars, load_paper_actions
+from project_alpha.paper_daily import (
+    append_common_daily_bars,
+    load_paper_actions,
+    validate_action_freshness,
+)
 from project_alpha.paper_snapshot_io import (
     load_paper_ledger,
     load_snapshot,
@@ -27,6 +32,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("primary_actions", type=Path)
     parser.add_argument("defensive_actions", type=Path)
     parser.add_argument("snapshot", type=Path)
+    parser.add_argument(
+        "--primary-actions-verified-through",
+        type=date.fromisoformat,
+        help="official-source coverage date for the primary action file",
+    )
+    parser.add_argument(
+        "--defensive-actions-verified-through",
+        type=date.fromisoformat,
+        help="official-source coverage date for the defensive action file",
+    )
     parser.add_argument(
         "--audit-output",
         type=Path,
@@ -63,7 +78,33 @@ def main() -> None:
         defensive_actions=defensive_actions,
     )
     audit = None
+    action_freshness_verified = False
     if result.appended_dates:
+        if args.write and (
+            args.primary_actions_verified_through is None
+            or args.defensive_actions_verified_through is None
+        ):
+            raise ValueError(
+                "both corporate-action verification dates are required with --write"
+            )
+        if (
+            args.primary_actions_verified_through is not None
+            and args.defensive_actions_verified_through is not None
+        ):
+            required_through = result.appended_dates[-1]
+            validate_action_freshness(
+                primary_actions,
+                verified_through=args.primary_actions_verified_through,
+                required_through=required_through,
+                label=ledger.spec.primary_symbol,
+            )
+            validate_action_freshness(
+                defensive_actions,
+                verified_through=args.defensive_actions_verified_through,
+                required_through=required_through,
+                label=ledger.spec.defensive_symbol,
+            )
+            action_freshness_verified = True
         audit = build_batch_audit(
             candidate_id=ledger.spec.candidate_id,
             prior_ledger_hash=prior_ledger_hash,
@@ -79,6 +120,14 @@ def main() -> None:
             defensive_bars=defensive,
             primary_actions=primary_actions,
             defensive_actions=defensive_actions,
+            primary_actions_verified_through=(
+                args.primary_actions_verified_through
+                or date.min
+            ),
+            defensive_actions_verified_through=(
+                args.defensive_actions_verified_through
+                or date.min
+            ),
         )
     if args.write and result.appended_dates:
         if args.audit_output is None:
@@ -106,6 +155,7 @@ def main() -> None:
         "last_observed_on": ledger.observations[-1].observed_on.isoformat(),
         "ledger_hash": ledger.ledger_hash,
         "source_audit": audit,
+        "action_freshness_verified": action_freshness_verified,
     }
     print(json.dumps(output, indent=2, sort_keys=True))
 
