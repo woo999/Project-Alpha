@@ -61,6 +61,28 @@ def load_paper_actions(path: str | Path) -> dict[date, PaperAction]:
     return actions
 
 
+def validate_action_freshness(
+    actions: dict[date, PaperAction],
+    *,
+    verified_through: date,
+    required_through: date,
+    label: str,
+) -> None:
+    """Reject stale or internally inconsistent corporate-action coverage."""
+    if not actions:
+        raise ValueError(f"{label} corporate action data is empty")
+    if max(actions) > verified_through:
+        raise ValueError(
+            f"{label} contains an event after its verification date"
+        )
+    if verified_through < required_through:
+        raise ValueError(
+            f"{label} corporate actions are verified only through "
+            f"{verified_through.isoformat()}, before required market date "
+            f"{required_through.isoformat()}"
+        )
+
+
 def append_common_daily_bars(
     ledger: PaperLedger,
     pairs: tuple[tuple[MitakeDailyBar, MitakeDailyBar], ...],
