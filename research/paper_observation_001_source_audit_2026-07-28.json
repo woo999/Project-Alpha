@@ -1,0 +1,42 @@
+{
+  "candidate_id": "0050-00719B-60-40-Q",
+  "observation_number": 1,
+  "observed_on": "2026-07-28",
+  "source": "Mitake desktop daily-history exports supplied by the user",
+  "input_files": {
+    "0050": {
+      "uploaded_name": "0050__D(1).txt",
+      "sha256": "b90e80578aabfd019a65afc149666daea4948191babbca55cd85bb7990783605",
+      "close": 97.15
+    },
+    "00719B": {
+      "uploaded_name": "00719B__D(1).txt",
+      "sha256": "10a512bd9b575f30d9056c9e1f1d2368c43459a16c9e16cfdd7dbde22794f7a5",
+      "close": 31.46
+    }
+  },
+  "validation": {
+    "strictly_after_historical_cutoff": true,
+    "common_trading_date": true,
+    "positive_finite_closes": true,
+    "duplicate_latest_date": false
+  },
+  "virtual_account": {
+    "starting_cash": 300000.0,
+    "primary_units": 1845,
+    "defensive_units": 3800,
+    "gross_turnover": 298789.75,
+    "charged_transaction_costs": 1195.159,
+    "ending_cash": 15.091,
+    "ending_portfolio_value": 298804.841,
+    "primary_weight": 0.5998622693,
+    "defensive_weight": 0.4000872262,
+    "cash_weight": 0.0000505045
+  },
+  "safety": {
+    "paper_only": true,
+    "broker_connected": false,
+    "orders_placed": false,
+    "real_capital_deployed": 0
+  }
+}
