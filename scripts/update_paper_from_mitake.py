@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from project_alpha.mitake import common_bars_after, load_mitake_daily_export
+from project_alpha.paper_audit import build_batch_audit
 from project_alpha.paper_daily import append_common_daily_bars, load_paper_actions
 from project_alpha.paper_snapshot_io import (
     load_paper_ledger,
@@ -27,6 +28,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("defensive_actions", type=Path)
     parser.add_argument("snapshot", type=Path)
     parser.add_argument(
+        "--audit-output",
+        type=Path,
+        help="required with --write when new observations are appended",
+    )
+    parser.add_argument(
         "--write",
         action="store_true",
         help="atomically replace the local observation CSV and snapshot",
@@ -38,6 +44,8 @@ def main() -> None:
     args = parse_args()
     ledger = load_paper_ledger(args.preregistration, args.observations)
     ledger.verify_snapshot(load_snapshot(args.snapshot))
+    prior_ledger_hash = ledger.ledger_hash
+    observation_count_before = len(ledger.observations)
     last_observed_on = ledger.observations[-1].observed_on
     primary = load_mitake_daily_export(
         args.primary_export, expected_symbol=ledger.spec.primary_symbol
@@ -46,14 +54,48 @@ def main() -> None:
         args.defensive_export, expected_symbol=ledger.spec.defensive_symbol
     )
     pairs = common_bars_after(primary, defensive, after=last_observed_on)
+    primary_actions = load_paper_actions(args.primary_actions)
+    defensive_actions = load_paper_actions(args.defensive_actions)
     result = append_common_daily_bars(
         ledger,
         pairs,
-        primary_actions=load_paper_actions(args.primary_actions),
-        defensive_actions=load_paper_actions(args.defensive_actions),
+        primary_actions=primary_actions,
+        defensive_actions=defensive_actions,
     )
+    audit = None
+    if result.appended_dates:
+        audit = build_batch_audit(
+            candidate_id=ledger.spec.candidate_id,
+            prior_ledger_hash=prior_ledger_hash,
+            new_ledger_hash=ledger.ledger_hash,
+            observation_count_before=observation_count_before,
+            observation_count_after=len(ledger.observations),
+            appended_dates=result.appended_dates,
+            primary_export_path=args.primary_export,
+            defensive_export_path=args.defensive_export,
+            primary_actions_path=args.primary_actions,
+            defensive_actions_path=args.defensive_actions,
+            primary_bars=primary,
+            defensive_bars=defensive,
+            primary_actions=primary_actions,
+            defensive_actions=defensive_actions,
+        )
     if args.write and result.appended_dates:
-        write_checkpoint(ledger, args.observations, args.snapshot)
+        if args.audit_output is None:
+            raise ValueError("--audit-output is required with --write")
+        if args.audit_output.exists():
+            raise ValueError("audit output already exists; refusing to overwrite history")
+        write_checkpoint(
+            ledger,
+            args.observations,
+            args.snapshot,
+            additional_text_files={
+                args.audit_output: json.dumps(
+                    audit, indent=2, sort_keys=True
+                )
+                + "\n"
+            },
+        )
     output = {
         "mode": "paper_only_no_broker",
         "write_requested": args.write,
@@ -63,6 +105,7 @@ def main() -> None:
         "observation_count": len(ledger.observations),
         "last_observed_on": ledger.observations[-1].observed_on.isoformat(),
         "ledger_hash": ledger.ledger_hash,
+        "source_audit": audit,
     }
     print(json.dumps(output, indent=2, sort_keys=True))
 
