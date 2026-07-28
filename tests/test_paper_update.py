@@ -3,7 +3,10 @@ from datetime import date
 import pytest
 
 from project_alpha.paper_tracking import CandidateSpec, PaperLedger, PaperObservation
-from project_alpha.paper_update import append_mark_to_market
+from project_alpha.paper_update import (
+    append_mark_to_market,
+    append_scheduled_rebalance,
+)
 
 
 def spec(interval=63):
@@ -104,4 +107,61 @@ def test_invalid_dividends_are_rejected(dividend):
             primary_close=1.0,
             defensive_close=1.0,
             primary_cash_dividend=dividend,
+        )
+
+
+def test_scheduled_rebalance_restores_weights_and_charges_costs():
+    ledger = PaperLedger(spec(interval=2))
+    ledger.append(initial_observation())
+    append_mark_to_market(
+        ledger,
+        observed_on=date(2026, 7, 29),
+        primary_close=1.5,
+        defensive_close=1.0,
+    )
+    result = append_scheduled_rebalance(
+        ledger,
+        observed_on=date(2026, 7, 30),
+        primary_close=1.5,
+        defensive_close=1.0,
+    )
+    assert result.turnover_today > 0
+    assert result.charged_transaction_costs_today == pytest.approx(
+        result.turnover_today * 0.004
+    )
+    assert abs(result.primary_weight - 0.6) <= 0.01
+    assert abs(result.defensive_weight - 0.4) <= 0.01
+    assert result.cash_balance >= 0
+
+
+def test_in_tolerance_scheduled_observation_avoids_unnecessary_trade():
+    ledger = PaperLedger(spec(interval=2))
+    ledger.append(initial_observation())
+    append_mark_to_market(
+        ledger,
+        observed_on=date(2026, 7, 29),
+        primary_close=1.0,
+        defensive_close=1.0,
+    )
+    result = append_scheduled_rebalance(
+        ledger,
+        observed_on=date(2026, 7, 30),
+        primary_close=1.0,
+        defensive_close=1.0,
+    )
+    assert result.primary_units == 60
+    assert result.defensive_units == 40
+    assert result.turnover_today == 0
+    assert result.charged_transaction_costs_today == 0
+
+
+def test_rebalance_is_rejected_off_schedule():
+    ledger = PaperLedger(spec())
+    ledger.append(initial_observation())
+    with pytest.raises(ValueError, match="forbidden"):
+        append_scheduled_rebalance(
+            ledger,
+            observed_on=date(2026, 7, 29),
+            primary_close=1.0,
+            defensive_close=1.0,
         )
