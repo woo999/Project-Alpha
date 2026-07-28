@@ -1,0 +1,30 @@
+{
+  "candidate_id": "0050-00719B-60-40-Q",
+  "activated_on": "2026-07-28",
+  "state": "PAPER_TRACKING_ACTIVE",
+  "forward_observations_recorded": 0,
+  "activation_gates": {
+    "official_distribution_evidence": "31/31",
+    "official_pytest": "106 passed, 0 failed",
+    "historical_candidate": "provisional_pass"
+  },
+  "frozen_rules": {
+    "weights": {
+      "0050": 0.60,
+      "00719B": 0.40
+    },
+    "rebalance_interval_trading_days": 63,
+    "minimum_transaction_cost_rate": 0.004,
+    "minimum_forward_observations": 252,
+    "maximum_forward_drawdown": 0.20,
+    "leverage": false
+  },
+  "safety": {
+    "record_only": true,
+    "broker_connected": false,
+    "orders_placed": false,
+    "capital_deployed": 0,
+    "live_ready": false
+  },
+  "next_required_event": "First valid common-market close strictly after 2026-07-27."
+}
