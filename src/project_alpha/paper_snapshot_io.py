@@ -114,9 +114,20 @@ def build_snapshot(
     preregistration_path: Path,
     observations_path: Path,
 ) -> PaperSnapshot:
+    return load_paper_ledger(
+        preregistration_path,
+        observations_path,
+    ).snapshot()
+
+
+def load_paper_ledger(
+    preregistration_path: Path,
+    observations_path: Path,
+) -> PaperLedger:
+    """Load and fully validate an active paper ledger from local files."""
     ledger = PaperLedger(load_preregistered_candidate(preregistration_path))
     ledger.extend(load_observations(observations_path))
-    return ledger.snapshot()
+    return ledger
 
 
 def write_snapshot(snapshot: PaperSnapshot, output_path: Path) -> None:
@@ -139,4 +150,3 @@ def write_snapshot(snapshot: PaperSnapshot, output_path: Path) -> None:
     except BaseException:
         temporary_path.unlink(missing_ok=True)
         raise
-
