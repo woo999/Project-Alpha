@@ -26,6 +26,7 @@ class CandidateSpec:
     defensive_weight: float
     rebalance_interval_trading_days: int
     rebalance_anchor: str = "first_forward_observation"
+    rebalance_weight_tolerance: float = 0.01
     maximum_drawdown: float = 0.20
     minimum_forward_observations: int = 252
 
@@ -46,6 +47,8 @@ class CandidateSpec:
             raise ValueError(
                 "rebalance_anchor must be 'first_forward_observation'"
             )
+        if not 0 < self.rebalance_weight_tolerance < 0.10:
+            raise ValueError("rebalance_weight_tolerance must be in (0, 0.10)")
         if not 0 < self.maximum_drawdown < 1:
             raise ValueError("maximum_drawdown must be between 0 and 1")
         if self.minimum_forward_observations < 2:
@@ -78,6 +81,9 @@ class PaperObservation:
     portfolio_value: float
     primary_close: float
     defensive_close: float
+    primary_units: int
+    defensive_units: int
+    cash_balance: float
 
     def __post_init__(self) -> None:
         values = (
@@ -87,6 +93,36 @@ class PaperObservation:
         )
         if any(not math.isfinite(value) or value <= 0 for value in values):
             raise ValueError("paper observation values must be finite and positive")
+        units = (self.primary_units, self.defensive_units)
+        if any(isinstance(value, bool) or not isinstance(value, int) for value in units):
+            raise ValueError("paper position units must be integers")
+        if any(value < 0 for value in units):
+            raise ValueError("paper position units cannot be negative")
+        if not math.isfinite(self.cash_balance) or self.cash_balance < 0:
+            raise ValueError("cash_balance must be finite and non-negative")
+        reconstructed = (
+            self.primary_units * self.primary_close
+            + self.defensive_units * self.defensive_close
+            + self.cash_balance
+        )
+        if not math.isclose(
+            self.portfolio_value, reconstructed, rel_tol=1e-9, abs_tol=0.01
+        ):
+            raise ValueError(
+                "portfolio_value must equal marked positions plus cash_balance"
+            )
+
+    @property
+    def primary_weight(self) -> float:
+        return self.primary_units * self.primary_close / self.portfolio_value
+
+    @property
+    def defensive_weight(self) -> float:
+        return self.defensive_units * self.defensive_close / self.portfolio_value
+
+    @property
+    def cash_weight(self) -> float:
+        return self.cash_balance / self.portfolio_value
 
 
 @dataclass(frozen=True)
@@ -109,6 +145,18 @@ class PaperLedger:
             raise ValueError("paper observations must be after historical cutoff")
         if self.observations and observation.observed_on <= self.observations[-1].observed_on:
             raise ValueError("paper observations must be strictly chronological")
+        observation_number = len(self.observations) + 1
+        if self.spec.is_rebalance_observation(observation_number):
+            tolerance = self.spec.rebalance_weight_tolerance
+            if (
+                abs(observation.primary_weight - self.spec.primary_weight) > tolerance
+                or abs(observation.defensive_weight - self.spec.defensive_weight)
+                > tolerance
+                or observation.cash_weight > tolerance
+            ):
+                raise ValueError(
+                    "rebalance observation does not match frozen target weights"
+                )
         self.observations.append(observation)
 
     def extend(self, observations: Iterable[PaperObservation]) -> None:
