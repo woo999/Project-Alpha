@@ -100,3 +100,13 @@ def test_stale_action_coverage_is_rejected():
         required_through=date(2026, 7, 29),
         label="0050",
     )
+
+def test_future_action_coverage_claim_is_rejected():
+    actions = {date(2026, 7, 21): PaperAction(1.0, 0.6)}
+    with pytest.raises(ValueError, match="future coverage cannot be asserted"):
+        validate_action_freshness(
+            actions,
+            verified_through=date(2026, 7, 30),
+            required_through=date(2026, 7, 29),
+            label="0050",
+        )
