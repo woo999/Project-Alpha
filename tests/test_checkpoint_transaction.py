@@ -38,12 +38,19 @@ def ledger():
 def test_checkpoint_writes_matching_pair(tmp_path):
     observations = tmp_path / "observations.csv"
     snapshot = tmp_path / "snapshot.json"
+    audit = tmp_path / "audit.json"
     target = ledger()
-    snapshot_io.write_checkpoint(target, observations, snapshot)
+    snapshot_io.write_checkpoint(
+        target,
+        observations,
+        snapshot,
+        additional_text_files={audit: '{"audit":true}\n'},
+    )
     loaded = snapshot_io.load_paper_ledger(
         _write_preregistration(tmp_path), observations
     )
     loaded.verify_snapshot(snapshot_io.load_snapshot(snapshot))
+    assert audit.read_text(encoding="utf-8") == '{"audit":true}\n'
 
 
 def test_checkpoint_rolls_back_if_second_replace_fails(tmp_path, monkeypatch):
