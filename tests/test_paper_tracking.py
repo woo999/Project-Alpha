@@ -32,6 +32,17 @@ def test_fingerprint_is_stable_and_changes_with_rule():
     assert candidate(4).fingerprint != candidate(3).fingerprint
 
 
+def test_rebalance_schedule_is_anchored_without_off_by_one_ambiguity():
+    spec = candidate()
+    assert spec.is_rebalance_observation(1) is True
+    assert spec.is_rebalance_observation(63) is False
+    assert spec.is_rebalance_observation(64) is True
+    assert spec.is_rebalance_observation(126) is False
+    assert spec.is_rebalance_observation(127) is True
+    with pytest.raises(ValueError, match="positive"):
+        spec.is_rebalance_observation(0)
+
+
 def test_historical_or_duplicate_observations_are_rejected():
     ledger = PaperLedger(candidate())
     with pytest.raises(ValueError, match="after historical cutoff"):
