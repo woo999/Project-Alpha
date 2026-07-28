@@ -6,6 +6,7 @@ import pytest
 from project_alpha.paper_snapshot_io import (
     OBSERVATION_COLUMNS,
     build_snapshot,
+    load_paper_ledger,
     load_preregistered_candidate,
 )
 
@@ -72,6 +73,15 @@ def test_active_candidate_creates_deterministic_snapshot(tmp_path):
     assert first.decision.eligible is False
 
 
+def test_load_paper_ledger_returns_validated_records(tmp_path):
+    ledger = load_paper_ledger(
+        write_preregistration(tmp_path),
+        write_observations(tmp_path),
+    )
+    assert len(ledger.observations) == 2
+    assert ledger.observations[-1].observed_on == date(2026, 7, 29)
+
+
 def test_csv_schema_and_rows_are_strict(tmp_path):
     prereg = write_preregistration(tmp_path)
     bad_schema = tmp_path / "bad_schema.csv"
@@ -87,4 +97,3 @@ def test_csv_schema_and_rows_are_strict(tmp_path):
     )
     with pytest.raises(ValueError, match="CSV row 2"):
         build_snapshot(prereg, bad_row)
-
