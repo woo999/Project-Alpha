@@ -7,6 +7,7 @@ from project_alpha.paper_daily import (
     PaperAction,
     append_common_daily_bars,
     load_paper_actions,
+    validate_action_freshness,
 )
 from project_alpha.paper_tracking import CandidateSpec, PaperLedger, PaperObservation
 
@@ -82,3 +83,20 @@ def test_action_file_is_strict(tmp_path):
     )
     with pytest.raises(ValueError, match="chronological"):
         load_paper_actions(path)
+
+
+def test_stale_action_coverage_is_rejected():
+    actions = {date(2026, 7, 21): PaperAction(1.0, 0.6)}
+    with pytest.raises(ValueError, match="before required market date"):
+        validate_action_freshness(
+            actions,
+            verified_through=date(2026, 7, 28),
+            required_through=date(2026, 7, 29),
+            label="0050",
+        )
+    validate_action_freshness(
+        actions,
+        verified_through=date(2026, 7, 29),
+        required_through=date(2026, 7, 29),
+        label="0050",
+    )
