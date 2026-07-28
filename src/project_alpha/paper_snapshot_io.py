@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import asdict
 import csv
 from datetime import date
+import io
 import json
 import math
 import os
@@ -232,30 +233,72 @@ def write_observations(
     output_path: Path,
 ) -> None:
     """Atomically replace a fully validated paper observation CSV."""
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=output_path.parent,
-        prefix=f".{output_path.name}.",
-        suffix=".tmp",
-        text=True,
-    )
-    temporary_path = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="") as handle:
-            writer = csv.DictWriter(handle, fieldnames=OBSERVATION_COLUMNS)
-            writer.writeheader()
-            for observation in observations:
-                writer.writerow(asdict(observation))
-            handle.flush()
-            os.fsync(handle.fileno())
-        temporary_path.replace(output_path)
-    except BaseException:
-        temporary_path.unlink(missing_ok=True)
-        raise
+    _atomic_write_text(output_path, _serialize_observations(observations), newline="")
 
 
 def write_snapshot(snapshot: PaperSnapshot, output_path: Path) -> None:
     """Atomically replace a local checkpoint after full validation."""
+    _atomic_write_text(output_path, snapshot.to_json() + "\n", newline="\n")
+
+
+def write_checkpoint(
+    ledger: PaperLedger,
+    observations_path: Path,
+    snapshot_path: Path,
+) -> None:
+    """Commit a ledger and its matching snapshot with runtime-error rollback.
+
+    Both complete files are staged and fsynced before either published file is
+    replaced.  If the second replacement raises, the first file is restored to
+    its exact previous contents.  This protects against ordinary I/O failures;
+    the snapshot guard still detects an abrupt process or machine failure.
+    """
+    observation_text = _serialize_observations(ledger.observations)
+    snapshot_text = ledger.snapshot().to_json() + "\n"
+    old_observations = (
+        observations_path.read_text(encoding="utf-8")
+        if observations_path.exists()
+        else None
+    )
+    old_snapshot = (
+        snapshot_path.read_text(encoding="utf-8")
+        if snapshot_path.exists()
+        else None
+    )
+    observation_stage = _stage_text(
+        observations_path, observation_text, newline=""
+    )
+    snapshot_stage = _stage_text(snapshot_path, snapshot_text, newline="\n")
+    observation_replaced = False
+    snapshot_replaced = False
+    try:
+        _replace_file(observation_stage, observations_path)
+        observation_replaced = True
+        _replace_file(snapshot_stage, snapshot_path)
+        snapshot_replaced = True
+    except BaseException:
+        if observation_replaced:
+            _restore_text(observations_path, old_observations, newline="")
+        if snapshot_replaced:
+            _restore_text(snapshot_path, old_snapshot, newline="\n")
+        raise
+    finally:
+        observation_stage.unlink(missing_ok=True)
+        snapshot_stage.unlink(missing_ok=True)
+
+
+def _serialize_observations(
+    observations: Iterable[PaperObservation],
+) -> str:
+    handle = io.StringIO(newline="")
+    writer = csv.DictWriter(handle, fieldnames=OBSERVATION_COLUMNS)
+    writer.writeheader()
+    for observation in observations:
+        writer.writerow(asdict(observation))
+    return handle.getvalue()
+
+
+def _stage_text(output_path: Path, content: str, *, newline: str) -> Path:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(
         dir=output_path.parent,
@@ -265,12 +308,42 @@ def write_snapshot(snapshot: PaperSnapshot, output_path: Path) -> None:
     )
     temporary_path = Path(temporary_name)
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(snapshot.to_json())
-            handle.write("\n")
+        with os.fdopen(
+            descriptor, "w", encoding="utf-8", newline=newline
+        ) as handle:
+            handle.write(content)
             handle.flush()
             os.fsync(handle.fileno())
-        temporary_path.replace(output_path)
+        return temporary_path
     except BaseException:
         temporary_path.unlink(missing_ok=True)
         raise
+
+
+def _replace_file(source: Path, destination: Path) -> None:
+    source.replace(destination)
+
+
+def _atomic_write_text(
+    output_path: Path,
+    content: str,
+    *,
+    newline: str,
+) -> None:
+    temporary_path = _stage_text(output_path, content, newline=newline)
+    try:
+        _replace_file(temporary_path, output_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+
+
+def _restore_text(
+    output_path: Path,
+    previous_content: str | None,
+    *,
+    newline: str,
+) -> None:
+    if previous_content is None:
+        output_path.unlink(missing_ok=True)
+    else:
+        _atomic_write_text(output_path, previous_content, newline=newline)
