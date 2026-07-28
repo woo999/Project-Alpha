@@ -7,6 +7,18 @@ from datetime import date
 from enum import IntEnum
 import math
 from typing import Iterable
+from urllib.parse import urlparse
+
+
+OFFICIAL_EVIDENCE_HOSTS = frozenset(
+    {
+        "api.yuantafunds.com",
+        "mopsov.twse.com.tw",
+        "www.sitca.org.tw",
+        "www.taifex.com.tw",
+        "www.tpex.org.tw",
+    }
+)
 
 
 class EvidenceLevel(IntEnum):
@@ -15,18 +27,32 @@ class EvidenceLevel(IntEnum):
     PRIMARY_REGULATORY_FILING = 3
 
 
+class EvidenceKind(IntEnum):
+    ESTIMATE_ONLY = 1
+    ACTUAL_DISTRIBUTION = 2
+
+
 @dataclass(frozen=True)
 class DistributionEvidence:
     ex_date: date
     cash_dividend: float
     source_url: str
     level: EvidenceLevel
+    kind: EvidenceKind = EvidenceKind.ACTUAL_DISTRIBUTION
 
     def __post_init__(self) -> None:
         if not math.isfinite(self.cash_dividend) or self.cash_dividend <= 0:
             raise ValueError("cash_dividend must be finite and positive")
-        if not self.source_url.startswith("https://"):
+        parsed = urlparse(self.source_url)
+        if parsed.scheme != "https" or not parsed.hostname:
             raise ValueError("source_url must be an HTTPS URL")
+        if (
+            self.level == EvidenceLevel.PRIMARY_REGULATORY_FILING
+            and parsed.hostname.lower() not in OFFICIAL_EVIDENCE_HOSTS
+        ):
+            raise ValueError(
+                "primary evidence must use an approved official source hostname"
+            )
 
 
 @dataclass(frozen=True)
@@ -37,6 +63,7 @@ class ProvenanceAudit:
     missing_dates: tuple[str, ...]
     conflicting_dates: tuple[str, ...]
     non_primary_dates: tuple[str, ...]
+    estimate_only_dates: tuple[str, ...] = ()
 
     @property
     def paper_eligible(self) -> bool:
@@ -47,6 +74,7 @@ class ProvenanceAudit:
             and not self.missing_dates
             and not self.conflicting_dates
             and not self.non_primary_dates
+            and not self.estimate_only_dates
         )
 
 
@@ -67,6 +95,7 @@ def audit_distribution_evidence(
     missing: list[str] = []
     conflicts: list[str] = []
     non_primary: list[str] = []
+    estimate_only: list[str] = []
     primary = 0
     evidenced = 0
     for event_date, expected_amount in sorted(expected.items()):
@@ -83,7 +112,17 @@ def audit_distribution_evidence(
             conflicts.append(event_date.isoformat())
             continue
         evidenced += 1
-        if any(item.level == EvidenceLevel.PRIMARY_REGULATORY_FILING for item in matching):
+        actual_matching = [
+            item
+            for item in matching
+            if item.kind == EvidenceKind.ACTUAL_DISTRIBUTION
+        ]
+        if not actual_matching:
+            estimate_only.append(event_date.isoformat())
+        elif any(
+            item.level == EvidenceLevel.PRIMARY_REGULATORY_FILING
+            for item in actual_matching
+        ):
             primary += 1
         else:
             non_primary.append(event_date.isoformat())
@@ -95,4 +134,5 @@ def audit_distribution_evidence(
         missing_dates=tuple(missing),
         conflicting_dates=tuple(conflicts),
         non_primary_dates=tuple(non_primary),
+        estimate_only_dates=tuple(estimate_only),
     )
