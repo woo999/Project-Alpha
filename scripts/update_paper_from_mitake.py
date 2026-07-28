@@ -7,6 +7,7 @@ from datetime import date
 import json
 from pathlib import Path
 
+from project_alpha.action_verification import load_action_verification
 from project_alpha.mitake import common_bars_after, load_mitake_daily_export
 from project_alpha.paper_audit import build_batch_audit
 from project_alpha.paper_daily import (
@@ -32,6 +33,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("primary_actions", type=Path)
     parser.add_argument("defensive_actions", type=Path)
     parser.add_argument("snapshot", type=Path)
+    parser.add_argument(
+        "--primary-action-verification",
+        type=Path,
+        help="JSON proof binding primary actions to an official source",
+    )
+    parser.add_argument(
+        "--defensive-action-verification",
+        type=Path,
+        help="JSON proof binding defensive actions to an official source",
+    )
     parser.add_argument(
         "--primary-actions-verified-through",
         type=date.fromisoformat,
@@ -79,28 +90,44 @@ def main() -> None:
     )
     audit = None
     action_freshness_verified = False
+    primary_verified_through = args.primary_actions_verified_through
+    defensive_verified_through = args.defensive_actions_verified_through
     if result.appended_dates:
+        if args.primary_action_verification is not None:
+            primary_proof = load_action_verification(
+                args.primary_action_verification,
+                action_path=args.primary_actions,
+                expected_symbol=ledger.spec.primary_symbol,
+            )
+            primary_verified_through = primary_proof.verified_through
+        if args.defensive_action_verification is not None:
+            defensive_proof = load_action_verification(
+                args.defensive_action_verification,
+                action_path=args.defensive_actions,
+                expected_symbol=ledger.spec.defensive_symbol,
+            )
+            defensive_verified_through = defensive_proof.verified_through
         if args.write and (
-            args.primary_actions_verified_through is None
-            or args.defensive_actions_verified_through is None
+            args.primary_action_verification is None
+            or args.defensive_action_verification is None
         ):
             raise ValueError(
-                "both corporate-action verification dates are required with --write"
+                "both hash-bound action verification documents are required with --write"
             )
         if (
-            args.primary_actions_verified_through is not None
-            and args.defensive_actions_verified_through is not None
+            primary_verified_through is not None
+            and defensive_verified_through is not None
         ):
             required_through = result.appended_dates[-1]
             validate_action_freshness(
                 primary_actions,
-                verified_through=args.primary_actions_verified_through,
+                verified_through=primary_verified_through,
                 required_through=required_through,
                 label=ledger.spec.primary_symbol,
             )
             validate_action_freshness(
                 defensive_actions,
-                verified_through=args.defensive_actions_verified_through,
+                verified_through=defensive_verified_through,
                 required_through=required_through,
                 label=ledger.spec.defensive_symbol,
             )
@@ -121,13 +148,13 @@ def main() -> None:
             primary_actions=primary_actions,
             defensive_actions=defensive_actions,
             primary_actions_verified_through=(
-                args.primary_actions_verified_through
-                or date.min
+                primary_verified_through or date.min
             ),
             defensive_actions_verified_through=(
-                args.defensive_actions_verified_through
-                or date.min
+                defensive_verified_through or date.min
             ),
+            primary_action_verification_path=args.primary_action_verification,
+            defensive_action_verification_path=args.defensive_action_verification,
         )
     if args.write and result.appended_dates:
         if args.audit_output is None:
