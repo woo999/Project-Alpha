@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import json
 
 import pytest
 
@@ -141,6 +142,10 @@ def test_snapshot_is_stable_and_detects_record_tampering():
     assert snapshot.last_observed_on == start + timedelta(days=1)
     assert snapshot.candidate_fingerprint == candidate().fingerprint
     assert len(snapshot.ledger_hash) == 64
+    saved = json.loads(snapshot.to_json())
+    assert saved["format_version"] == "paper-ledger-v1"
+    assert saved["last_observed_on"] == "2026-07-29"
+    assert saved["ledger_hash"] == snapshot.ledger_hash
     ledger.verify_snapshot(snapshot)
 
     changed = PaperLedger(candidate())
