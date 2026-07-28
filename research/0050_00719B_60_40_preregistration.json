@@ -22,11 +22,14 @@
   "minimum_forward_observations": 252,
   "maximum_forward_drawdown": 0.20,
   "rule_changes_allowed": false,
-  "current_state": "BLOCKED_PENDING_PRIMARY_SOURCE_DIVIDEND_VERIFICATION",
-  "paper_tracking_started": false,
+  "current_state": "PAPER_TRACKING_ACTIVE",
+  "paper_tracking_started": true,
+  "paper_tracking_activated_on": "2026-07-28",
+  "forward_observations_recorded": 0,
   "live_ready": false,
   "notes": [
     "All observations through 2026-07-27 are considered inspected historical data.",
+    "Activation opens record-only forward tracking and does not create a historical or synthetic observation.",
     "Any change to weights, instruments, rebalance interval or gates creates a new candidate ID and restarts the forward clock.",
     "Paper tracking does not authorize brokerage access or real orders."
   ]
