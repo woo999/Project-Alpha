@@ -24,7 +24,8 @@ def candidate(minimum_forward_observations=3):
 
 
 def observation(day, value):
-    return PaperObservation(day, value, 100.0, 30.0)
+    marked_price = value / 100
+    return PaperObservation(day, value, marked_price, marked_price, 60, 40, 0.0)
 
 
 def test_fingerprint_is_stable_and_changes_with_rule():
@@ -41,6 +42,22 @@ def test_rebalance_schedule_is_anchored_without_off_by_one_ambiguity():
     assert spec.is_rebalance_observation(127) is True
     with pytest.raises(ValueError, match="positive"):
         spec.is_rebalance_observation(0)
+
+
+def test_observation_must_reconcile_positions_and_cash():
+    with pytest.raises(ValueError, match="marked positions"):
+        PaperObservation(date(2026, 7, 28), 101.0, 1.0, 1.0, 60, 40, 0.0)
+    with pytest.raises(ValueError, match="non-negative"):
+        PaperObservation(date(2026, 7, 28), 99.0, 1.0, 1.0, 60, 40, -1.0)
+
+
+def test_rebalance_observation_must_match_frozen_weights():
+    ledger = PaperLedger(candidate())
+    off_target = PaperObservation(
+        date(2026, 7, 28), 100.0, 1.0, 1.0, 70, 30, 0.0
+    )
+    with pytest.raises(ValueError, match="frozen target weights"):
+        ledger.append(off_target)
 
 
 def test_historical_or_duplicate_observations_are_rejected():
