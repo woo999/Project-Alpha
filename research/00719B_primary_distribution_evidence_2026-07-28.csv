@@ -1,5 +1,13 @@
 ex_date,cash_dividend,authority,source_url
+2019-01-22,0.08,TPEX,https://www.tpex.org.tw/www/zh-tw/bulletin/exDailyQ
+2019-04-23,0.15,TPEX,https://www.tpex.org.tw/www/zh-tw/bulletin/exDailyQ
+2019-07-19,0.15,TPEX,https://www.tpex.org.tw/www/zh-tw/bulletin/exDailyQ
+2019-10-23,0.08,TPEX,https://www.tpex.org.tw/www/zh-tw/bulletin/exDailyQ
+2020-01-31,0.13,TPEX,https://www.tpex.org.tw/www/zh-tw/bulletin/exDailyQ
+2020-04-23,0.02,TPEX,https://www.tpex.org.tw/www/zh-tw/bulletin/exDailyQ
 2020-07-16,0.02,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/美債1-3年-收益分配第二階段公告(評價日：109.06.30).pdf
+2020-10-21,0.02,TPEX,https://www.tpex.org.tw/www/zh-tw/bulletin/exDailyQ
+2021-01-19,0.02,TPEX,https://www.tpex.org.tw/www/zh-tw/bulletin/exDailyQ
 2021-04-20,0.02,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/美債1-3年-收益分配第二階段公告.pdf
 2021-07-16,0.03,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/1100714-00719B第二階段公告.pdf
 2021-10-19,0.03,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/1101015-00719B第二階段公告.pdf
@@ -8,6 +16,7 @@ ex_date,cash_dividend,authority,source_url
 2022-07-19,0.24,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/1110715-00719B第二階段公告.pdf
 2022-10-19,0.33,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/1111017-00719B第二階段公告.pdf
 2023-01-31,0.33,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/1120117-00719B第二階段公告.pdf
+2023-04-21,0.32,TPEX,https://www.tpex.org.tw/www/zh-tw/bulletin/exDailyQ
 2023-07-18,0.37,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/1120714-00719B第二階段公告.pdf
 2023-10-19,0.41,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/1121017-00719B第二階段公告.pdf
 2024-01-17,0.34,SITCA,https://www.sitca.org.tw/FundNote/A/A0005/02/1130115-00719B第二階段公告.pdf
