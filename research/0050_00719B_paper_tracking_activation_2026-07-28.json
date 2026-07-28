@@ -2,7 +2,7 @@
   "candidate_id": "0050-00719B-60-40-Q",
   "activated_on": "2026-07-28",
   "state": "PAPER_TRACKING_ACTIVE",
-  "forward_observations_recorded": 0,
+  "forward_observations_recorded": 1,
   "activation_gates": {
     "official_distribution_evidence": "31/31",
     "official_pytest": "106 passed, 0 failed",
@@ -26,5 +26,11 @@
     "capital_deployed": 0,
     "live_ready": false
   },
-  "next_required_event": "First valid common-market close strictly after 2026-07-27."
+  "first_forward_observation": {
+    "observed_on": "2026-07-28",
+    "primary_close": 97.15,
+    "defensive_close": 31.46,
+    "snapshot": "research/paper_snapshot.json"
+  },
+  "next_required_event": "Next valid common-market close after 2026-07-28."
 }
