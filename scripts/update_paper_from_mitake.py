@@ -44,6 +44,16 @@ def parse_args() -> argparse.Namespace:
         help="JSON proof binding defensive actions to an official source",
     )
     parser.add_argument(
+        "--primary-action-source",
+        type=Path,
+        help="saved raw official response bound by the primary proof",
+    )
+    parser.add_argument(
+        "--defensive-action-source",
+        type=Path,
+        help="saved raw official response bound by the defensive proof",
+    )
+    parser.add_argument(
         "--primary-actions-verified-through",
         type=date.fromisoformat,
         help="official-source coverage date for the primary action file",
@@ -94,16 +104,22 @@ def main() -> None:
     defensive_verified_through = args.defensive_actions_verified_through
     if result.appended_dates:
         if args.primary_action_verification is not None:
+            if args.primary_action_source is None:
+                raise ValueError("primary official action source file is required")
             primary_proof = load_action_verification(
                 args.primary_action_verification,
                 action_path=args.primary_actions,
+                source_path=args.primary_action_source,
                 expected_symbol=ledger.spec.primary_symbol,
             )
             primary_verified_through = primary_proof.verified_through
         if args.defensive_action_verification is not None:
+            if args.defensive_action_source is None:
+                raise ValueError("defensive official action source file is required")
             defensive_proof = load_action_verification(
                 args.defensive_action_verification,
                 action_path=args.defensive_actions,
+                source_path=args.defensive_action_source,
                 expected_symbol=ledger.spec.defensive_symbol,
             )
             defensive_verified_through = defensive_proof.verified_through
@@ -155,6 +171,8 @@ def main() -> None:
             ),
             primary_action_verification_path=args.primary_action_verification,
             defensive_action_verification_path=args.defensive_action_verification,
+            primary_action_source_path=args.primary_action_source,
+            defensive_action_source_path=args.defensive_action_source,
         )
     if args.write and result.appended_dates:
         if args.audit_output is None:
