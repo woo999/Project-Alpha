@@ -6,6 +6,7 @@ import argparse
 from datetime import date
 import json
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 
 from project_alpha.mitake import (
     load_mitake_daily_export,
@@ -23,6 +24,44 @@ from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_official_close(
+    url: str,
+    symbol: str,
+) -> tuple[OfficialClose | None, dict[str, object], str | None]:
+    """Return a non-ready source status instead of an operational traceback."""
+    try:
+        download = fetch_official_source(url)
+        close = official_close_for_symbol(
+            download.content,
+            source_url=download.final_url,
+            symbol=symbol,
+        )
+    except HTTPError as exc:
+        reason = f"HTTP {exc.code}"
+    except (URLError, TimeoutError, OSError) as exc:
+        reason = type(exc).__name__
+    else:
+        return (
+            close,
+            {
+                "available": True,
+                "observed_on": close.observed_on.isoformat(),
+                "close": close.close,
+                "url": download.final_url,
+            },
+            None,
+        )
+    return (
+        None,
+        {
+            "available": False,
+            "error": reason,
+            "url": url,
+        },
+        f"{symbol} official source unavailable ({reason})",
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -76,20 +115,23 @@ def main() -> None:
         raise ValueError(
             "primary and defensive Mitake exports must be supplied together"
         )
-    primary_download = fetch_official_source(TWSE_DAILY_CLOSE_URL)
-    defensive_download = fetch_official_source(TPEX_DAILY_CLOSE_URL)
-    primary = official_close_for_symbol(
-        primary_download.content,
-        source_url=primary_download.final_url,
-        symbol="0050",
+    primary, primary_source, primary_blocker = _load_official_close(
+        TWSE_DAILY_CLOSE_URL,
+        "0050",
     )
-    defensive = official_close_for_symbol(
-        defensive_download.content,
-        source_url=defensive_download.final_url,
-        symbol="00719B",
+    defensive, defensive_source, defensive_blocker = _load_official_close(
+        TPEX_DAILY_CLOSE_URL,
+        "00719B",
     )
-    official_closes = {"0050": primary, "00719B": defensive}
-    official_ready = all(
+    official_closes = {
+        symbol: value
+        for symbol, value in {
+            "0050": primary,
+            "00719B": defensive,
+        }.items()
+        if value is not None
+    }
+    official_ready = len(official_closes) == 2 and all(
         value.observed_on == args.expected_date
         for value in official_closes.values()
     )
@@ -135,11 +177,21 @@ def main() -> None:
             }
             for symbol, value in export_closes.items()
         }
-    blockers = close_readiness_blockers(
-        expected_date=args.expected_date,
-        official_closes=official_closes,
-        export_closes=export_closes,
+    source_blockers = tuple(
+        blocker
+        for blocker in (primary_blocker, defensive_blocker)
+        if blocker is not None
     )
+    if source_blockers:
+        blockers = source_blockers
+        if export_closes is None:
+            blockers += ("Mitake exports were not supplied",)
+    else:
+        blockers = close_readiness_blockers(
+            expected_date=args.expected_date,
+            official_closes=official_closes,
+            export_closes=export_closes,
+        )
     if sequence_blocker is not None:
         blockers += (sequence_blocker,)
     report = {
@@ -155,16 +207,8 @@ def main() -> None:
             "snapshot_verified": True,
         },
         "sources": {
-            "0050": {
-                "observed_on": primary.observed_on.isoformat(),
-                "close": primary.close,
-                "url": primary_download.final_url,
-            },
-            "00719B": {
-                "observed_on": defensive.observed_on.isoformat(),
-                "close": defensive.close,
-                "url": defensive_download.final_url,
-            },
+            "0050": primary_source,
+            "00719B": defensive_source,
         },
     }
     if exports is not None:
