@@ -103,3 +103,16 @@ def test_unannounced_cash_dividend_cannot_verify_action_csv(tmp_path):
             event_date=date(2026, 7, 31),
             actions={date(2026, 7, 31): PaperAction(1.0, 0.27)},
         )
+
+
+def test_other_official_path_cannot_verify_action_schedule(tmp_path):
+    source = tmp_path / "wrong-endpoint.json"
+    source.write_text("[]", encoding="utf-8")
+    with pytest.raises(ValueError, match="unsupported"):
+        verify_official_action_day(
+            source,
+            source_url="https://www.tpex.org.tw/openapi/v1/tpex_cmode",
+            symbol="00719B",
+            event_date=date(2026, 7, 29),
+            actions={},
+        )
