@@ -98,6 +98,25 @@ def common_bars_after(
     )
 
 
+def single_common_bar_after(
+    primary: tuple[MitakeDailyBar, ...],
+    defensive: tuple[MitakeDailyBar, ...],
+    *,
+    after: date,
+    expected_date: date,
+) -> tuple[MitakeDailyBar, MitakeDailyBar]:
+    """Require exactly one common new bar for a single-day evidence package."""
+    pairs = common_bars_after(primary, defensive, after=after)
+    dates = tuple(pair[0].observed_on for pair in pairs)
+    if dates != (expected_date,):
+        found = [value.isoformat() for value in dates]
+        raise ValueError(
+            f"Mitake new dates after {after.isoformat()} must be exactly "
+            f"[{expected_date.isoformat()}], found {found}"
+        )
+    return pairs[0]
+
+
 def latest_common_bar(
     primary: tuple[MitakeDailyBar, ...],
     defensive: tuple[MitakeDailyBar, ...],
