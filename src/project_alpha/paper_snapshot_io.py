@@ -135,6 +135,17 @@ def load_paper_ledger(
     return ledger
 
 
+def load_authenticated_paper_ledger(
+    preregistration_path: Path,
+    observations_path: Path,
+    snapshot_path: Path,
+) -> PaperLedger:
+    """Load a paper ledger only when its published checkpoint still matches."""
+    ledger = load_paper_ledger(preregistration_path, observations_path)
+    ledger.verify_snapshot(load_snapshot(snapshot_path))
+    return ledger
+
+
 def load_snapshot(path: Path) -> PaperSnapshot:
     """Strictly load a published checkpoint for pre-update verification."""
     try:
