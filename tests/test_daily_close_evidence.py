@@ -2,7 +2,10 @@ import json
 
 import pytest
 
-from project_alpha.daily_close_evidence import prepare_daily_close_evidence
+from project_alpha.daily_close_evidence import (
+    load_daily_close_evidence,
+    prepare_daily_close_evidence,
+)
 from project_alpha.official_close import (
     TPEX_DAILY_CLOSE_URL,
     TWSE_DAILY_CLOSE_URL,
@@ -60,6 +63,12 @@ def test_close_evidence_is_published_atomically(tmp_path):
         "00719B_official_close.json",
         "manifest.json",
     }
+    loaded = load_daily_close_evidence(
+        output,
+        primary_export_path=primary,
+        defensive_export_path=defensive,
+    )
+    assert loaded.observed_on.isoformat() == "2026-07-29"
 
 
 def test_close_conflict_leaves_no_partial_package(tmp_path):
@@ -90,4 +99,24 @@ def test_asymmetric_latest_dates_are_rejected_before_download(tmp_path):
             defensive_export_path=defensive,
             output_root=tmp_path / "evidence",
             fetcher=_fetcher(),
+        )
+
+
+def test_modified_export_or_official_source_is_rejected(tmp_path):
+    primary = tmp_path / "0050.txt"
+    defensive = tmp_path / "00719B.txt"
+    _export(primary, "0050", "2026/07/29", 98.15)
+    _export(defensive, "00719B", "2026/07/29", 31.5)
+    output = prepare_daily_close_evidence(
+        primary_export_path=primary,
+        defensive_export_path=defensive,
+        output_root=tmp_path / "evidence",
+        fetcher=_fetcher(),
+    )
+    primary.write_text(primary.read_text().replace("98.15", "98.10"))
+    with pytest.raises(ValueError, match="export"):
+        load_daily_close_evidence(
+            output,
+            primary_export_path=primary,
+            defensive_export_path=defensive,
         )
