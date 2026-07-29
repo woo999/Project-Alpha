@@ -28,7 +28,9 @@ from project_alpha.paper_daily import load_paper_actions
 TWSE_ACTION_SCHEDULE_URL = (
     "https://openapi.twse.com.tw/v1/exchangeReport/TWT48U_ALL"
 )
-TPEX_ACTION_SCHEDULE_URL = "https://www.tpex.org.tw/openapi/v1/tpex_cmode"
+TPEX_ACTION_SCHEDULE_URL = (
+    "https://www.tpex.org.tw/openapi/v1/tpex_exright_prepost"
+)
 
 
 @dataclass(frozen=True)
