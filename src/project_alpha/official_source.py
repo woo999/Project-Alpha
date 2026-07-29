@@ -5,13 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import time
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from project_alpha.action_verification import validate_official_source_url
 
 
 MAX_OFFICIAL_SOURCE_BYTES = 25 * 1024 * 1024
+RETRYABLE_HTTP_STATUS_CODES = frozenset({408, 429, 500, 502, 503, 504})
 ALLOWED_CONTENT_TYPES = frozenset(
     {
         "application/json",
@@ -71,6 +72,12 @@ def fetch_official_source(
                     )
                 content = response.read(max_bytes + 1)
             break
+        except HTTPError as exc:
+            if exc.code not in RETRYABLE_HTTP_STATUS_CODES:
+                raise
+            if attempt + 1 == attempts:
+                raise
+            time.sleep(retry_delay * (2**attempt))
         except (TimeoutError, URLError):
             if attempt + 1 == attempts:
                 raise
