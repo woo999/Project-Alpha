@@ -98,14 +98,21 @@ def verify_official_action_day(
     actions: dict[date, PaperAction],
 ) -> None:
     """Require the saved official schedule and action CSV to agree for one day."""
-    hostname = (urlparse(source_url).hostname or "").lower()
+    parsed = urlparse(source_url)
+    hostname = (parsed.hostname or "").lower()
     payload = Path(source_path).read_bytes()
-    if hostname == "openapi.twse.com.tw":
+    if (
+        hostname == "openapi.twse.com.tw"
+        and parsed.path.endswith("/exchangeReport/TWT48U_ALL")
+    ):
         schedule = parse_twse_action_schedule(payload)
-    elif hostname == "www.tpex.org.tw":
+    elif (
+        hostname == "www.tpex.org.tw"
+        and parsed.path.endswith("/tpex_exright_prepost")
+    ):
         schedule = parse_tpex_action_schedule(payload)
     else:
-        raise ValueError("unsupported official action schedule host")
+        raise ValueError("unsupported official action schedule source")
     matches = [
         item
         for item in schedule
