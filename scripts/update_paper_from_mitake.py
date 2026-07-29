@@ -10,6 +10,7 @@ from pathlib import Path
 from project_alpha.action_verification import load_action_verification
 from project_alpha.action_schedule import verify_official_action_day
 from project_alpha.daily_action_evidence import load_daily_action_evidence
+from project_alpha.daily_close_evidence import load_daily_close_evidence
 from project_alpha.mitake import common_bars_after, load_mitake_daily_export
 from project_alpha.paper_audit import build_batch_audit
 from project_alpha.paper_daily import (
@@ -39,6 +40,11 @@ def parse_args() -> argparse.Namespace:
         "--action-evidence-dir",
         type=Path,
         help="complete atomic daily evidence package for both symbols",
+    )
+    parser.add_argument(
+        "--close-evidence-dir",
+        type=Path,
+        help="complete official-close evidence package for both symbols",
     )
     parser.add_argument(
         "--primary-action-verification",
@@ -107,6 +113,10 @@ def main() -> None:
     )
     audit = None
     action_freshness_verified = False
+    close_evidence_verified = False
+    close_evidence_manifest_path = None
+    primary_close_source_path = None
+    defensive_close_source_path = None
     primary_verified_through = args.primary_actions_verified_through
     defensive_verified_through = args.defensive_actions_verified_through
     primary_verification_path = args.primary_action_verification
@@ -114,6 +124,21 @@ def main() -> None:
     primary_source_path = args.primary_action_source
     defensive_source_path = args.defensive_action_source
     if result.appended_dates:
+        if args.close_evidence_dir is not None:
+            close_package = load_daily_close_evidence(
+                args.close_evidence_dir,
+                primary_export_path=args.primary_export,
+                defensive_export_path=args.defensive_export,
+            )
+            if result.appended_dates != (close_package.observed_on,):
+                raise ValueError(
+                    "daily close evidence requires exactly one matching "
+                    "appended date"
+                )
+            close_evidence_manifest_path = close_package.manifest_path
+            primary_close_source_path = close_package.primary_source_path
+            defensive_close_source_path = close_package.defensive_source_path
+            close_evidence_verified = True
         if args.action_evidence_dir is not None:
             if any(
                 value is not None
@@ -236,6 +261,9 @@ def main() -> None:
             defensive_action_verification_path=defensive_verification_path,
             primary_action_source_path=primary_source_path,
             defensive_action_source_path=defensive_source_path,
+            close_evidence_manifest_path=close_evidence_manifest_path,
+            primary_close_source_path=primary_close_source_path,
+            defensive_close_source_path=defensive_close_source_path,
         )
     if args.write and result.appended_dates:
         if args.audit_output is None:
@@ -264,6 +292,7 @@ def main() -> None:
         "ledger_hash": ledger.ledger_hash,
         "source_audit": audit,
         "action_freshness_verified": action_freshness_verified,
+        "close_evidence_verified": close_evidence_verified,
     }
     print(json.dumps(output, indent=2, sort_keys=True))
 
