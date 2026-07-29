@@ -14,19 +14,37 @@ from project_alpha.official_close import (
 
 def test_twse_close_parses_roc_date_and_price():
     payload = json.dumps(
-        [{"Date": "1150729", "Code": "0050", "ClosingPrice": "98.15"}]
+        [
+            {"Date": "1150729", "Code": "00682U", "ClosingPrice": ""},
+            {"Date": "1150729", "Code": "0050", "ClosingPrice": "98.15"},
+        ]
     ).encode()
-    row = parse_twse_daily_closes(payload)[0]
+    rows = parse_twse_daily_closes(payload)
+    assert len(rows) == 1
+    row = rows[0]
     assert row.observed_on == date(2026, 7, 29)
     assert row.close == pytest.approx(98.15)
 
 
-def test_tpex_close_parses_chinese_schema():
+def test_tpex_close_parses_current_openapi_schema():
     payload = json.dumps(
-        [{"資料日期": "115/07/29", "代號": "00719B", "收盤": "31.50"}],
+        [
+            {
+                "Date": "115/07/29",
+                "SecuritiesCompanyCode": "006201",
+                "Close": "---",
+            },
+            {
+                "Date": "115/07/29",
+                "SecuritiesCompanyCode": "00719B",
+                "Close": "31.50",
+            }
+        ],
         ensure_ascii=False,
     ).encode()
-    row = parse_tpex_daily_closes(payload)[0]
+    rows = parse_tpex_daily_closes(payload)
+    assert len(rows) == 1
+    row = rows[0]
     assert row.symbol == "00719B"
     assert row.close == pytest.approx(31.5)
 
@@ -41,7 +59,13 @@ def test_tpex_close_parses_chinese_schema():
             98.10,
         ),
         (
-            [{"資料日期": "1150729", "代號": "00719B", "收盤": "31.5"}],
+            [
+                {
+                    "Date": "1150729",
+                    "SecuritiesCompanyCode": "00719B",
+                    "Close": "31.5",
+                }
+            ],
             TPEX_DAILY_CLOSE_URL,
             "00719B",
             31.4,
