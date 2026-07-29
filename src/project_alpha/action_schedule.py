@@ -17,7 +17,7 @@ class ScheduledAction:
     event_date: date
     symbol: str
     split_ratio: float
-    cash_dividend: float
+    cash_dividend: float | None
 
 
 def _roc_compact_date(value: object) -> date:
@@ -35,6 +35,13 @@ def _number(value: object, *, default: float = 0.0) -> float:
     return result
 
 
+def _announced_cash_dividend(value: object) -> float | None:
+    text = str(value).strip()
+    if text in {"", "尚未公告"}:
+        return None
+    return _number(text)
+
+
 def parse_twse_action_schedule(payload: bytes) -> tuple[ScheduledAction, ...]:
     rows = json.loads(payload.decode("utf-8"))
     if not isinstance(rows, list):
@@ -50,7 +57,7 @@ def parse_twse_action_schedule(payload: bytes) -> tuple[ScheduledAction, ...]:
                 _roc_compact_date(row["Date"]),
                 str(row["Code"]).strip(),
                 1.0 + stock_ratio,
-                _number(row["CashDividend"]),
+                _announced_cash_dividend(row["CashDividend"]),
             )
         )
     return tuple(result)
@@ -60,18 +67,23 @@ def parse_tpex_action_schedule(payload: bytes) -> tuple[ScheduledAction, ...]:
     rows = json.loads(payload.decode("utf-8"))
     if not isinstance(rows, list):
         raise ValueError("TPEx action schedule must be a JSON array")
-    required = {"除權息日期", "股票代號", "無償配股率", "現金股利"}
+    required = {
+        "ExRrightsExDividendDate",
+        "SecuritiesCompanyCode",
+        "StockDividendRatio",
+        "CashDividend",
+    }
     result = []
     for row in rows:
         if not isinstance(row, dict) or not required.issubset(row):
             raise ValueError("TPEx action schedule schema changed")
-        stock_ratio = _number(row["無償配股率"])
+        stock_ratio = _number(row["StockDividendRatio"])
         result.append(
             ScheduledAction(
-                _roc_compact_date(row["除權息日期"]),
-                str(row["股票代號"]).strip(),
+                _roc_compact_date(row["ExRrightsExDividendDate"]),
+                str(row["SecuritiesCompanyCode"]).strip(),
                 1.0 + stock_ratio,
-                _number(row["現金股利"]),
+                _announced_cash_dividend(row["CashDividend"]),
             )
         )
     return tuple(result)
@@ -107,6 +119,8 @@ def verify_official_action_day(
     if not matches or expected is None:
         raise ValueError("official action schedule and action CSV disagree")
     item = matches[0]
+    if item.cash_dividend is None:
+        raise ValueError("official cash dividend is not yet announced")
     if not math.isclose(item.split_ratio, expected.split_ratio, abs_tol=1e-12):
         raise ValueError("official split ratio conflicts with action CSV")
     if not math.isclose(
