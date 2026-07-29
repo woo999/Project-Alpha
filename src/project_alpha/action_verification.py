@@ -13,6 +13,7 @@ OFFICIAL_ACTION_SOURCE_HOSTS = frozenset(
     {
         "api.yuantafunds.com",
         "mopsov.twse.com.tw",
+        "openapi.twse.com.tw",
         "www.sitca.org.tw",
         "www.taifex.com.tw",
         "www.tpex.org.tw",
