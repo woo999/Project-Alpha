@@ -34,6 +34,7 @@ from project_alpha.official_close import (
 )
 from project_alpha.official_source import OfficialSourceDownload
 from project_alpha.paper_daily import PaperAction
+from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -193,6 +194,41 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory() as temporary:
         temp = Path(temporary)
+        ledger = load_authenticated_paper_ledger(
+            ROOT / "research/preregistration.json",
+            ROOT / "data/paper_observations.csv",
+            ROOT / "research/paper_snapshot.json",
+        )
+        _require(
+            ledger.observations[-1].observed_on == date(2026, 7, 28),
+            "authenticated ledger boundary changed",
+        )
+        checks.append("authenticated_paper_ledger_loaded")
+
+        snapshot_document = json.loads(
+            (ROOT / "research/paper_snapshot.json").read_text(encoding="utf-8")
+        )
+        snapshot_document["ledger_hash"] = "0" * 64
+        tampered_snapshot = temp / "tampered-paper-snapshot.json"
+        tampered_snapshot.write_text(
+            json.dumps(snapshot_document),
+            encoding="utf-8",
+        )
+        try:
+            load_authenticated_paper_ledger(
+                ROOT / "research/preregistration.json",
+                ROOT / "data/paper_observations.csv",
+                tampered_snapshot,
+            )
+        except ValueError as exc:
+            _require(
+                "does not match" in str(exc),
+                "tampered snapshot failed for the wrong reason",
+            )
+        else:
+            raise RuntimeError("tampered paper snapshot was accepted")
+        checks.append("tampered_paper_snapshot_rejected")
+
         primary_export = temp / "0050.txt"
         defensive_export = temp / "00719B.txt"
         _write_export(primary_export, "0050", "98.15")
