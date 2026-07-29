@@ -42,6 +42,10 @@ def _price(value: object) -> float:
     return result
 
 
+def _missing_price(value: object) -> bool:
+    return str(value).strip() in {"", "---"}
+
+
 def parse_twse_daily_closes(payload: bytes) -> tuple[OfficialClose, ...]:
     rows = json.loads(payload.decode("utf-8"))
     if not isinstance(rows, list):
@@ -51,6 +55,8 @@ def parse_twse_daily_closes(payload: bytes) -> tuple[OfficialClose, ...]:
     for row in rows:
         if not isinstance(row, dict) or not required.issubset(row):
             raise ValueError("TWSE daily close schema changed")
+        if _missing_price(row["ClosingPrice"]):
+            continue
         result.append(
             OfficialClose(
                 observed_on=_roc_date(row["Date"]),
@@ -65,16 +71,18 @@ def parse_tpex_daily_closes(payload: bytes) -> tuple[OfficialClose, ...]:
     rows = json.loads(payload.decode("utf-8"))
     if not isinstance(rows, list):
         raise ValueError("TPEx daily closes must be a JSON array")
-    required = {"資料日期", "代號", "收盤"}
+    required = {"Date", "SecuritiesCompanyCode", "Close"}
     result = []
     for row in rows:
         if not isinstance(row, dict) or not required.issubset(row):
             raise ValueError("TPEx daily close schema changed")
+        if _missing_price(row["Close"]):
+            continue
         result.append(
             OfficialClose(
-                observed_on=_roc_date(row["資料日期"]),
-                symbol=str(row["代號"]).strip(),
-                close=_price(row["收盤"]),
+                observed_on=_roc_date(row["Date"]),
+                symbol=str(row["SecuritiesCompanyCode"]).strip(),
+                close=_price(row["Close"]),
             )
         )
     return tuple(result)
