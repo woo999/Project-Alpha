@@ -9,7 +9,9 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from urllib.error import HTTPError
 
+from project_alpha import official_source
 from project_alpha.action_schedule import (
     parse_tpex_action_schedule,
     verify_official_action_day,
@@ -94,6 +96,75 @@ def _write_export(path: Path, symbol: str, close: str) -> None:
     )
 
 
+def _check_http_retry_policy() -> tuple[str, str]:
+    """Exercise permanent/transient HTTP handling without a network request."""
+
+    class Headers:
+        @staticmethod
+        def get_content_type() -> str:
+            return "application/json"
+
+    class Response:
+        headers = Headers()
+
+        def __init__(self, url: str):
+            self.url = url
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return None
+
+        def geturl(self) -> str:
+            return self.url
+
+        @staticmethod
+        def read(limit: int) -> bytes:
+            return b"[]"
+
+    source_url = "https://www.tpex.org.tw/openapi/v1/example"
+    original_open = official_source.urlopen
+    original_sleep = official_source.time.sleep
+    try:
+        permanent_calls = 0
+
+        def missing(request, timeout):
+            nonlocal permanent_calls
+            permanent_calls += 1
+            raise HTTPError(request.full_url, 404, "not found", {}, None)
+
+        official_source.urlopen = missing
+        official_source.time.sleep = lambda seconds: None
+        try:
+            official_source.fetch_official_source(source_url)
+        except HTTPError as exc:
+            _require(exc.code == 404, "permanent HTTP status changed")
+        else:
+            raise RuntimeError("permanent HTTP error was accepted")
+        _require(permanent_calls == 1, "permanent HTTP error was retried")
+
+        transient_calls = 0
+
+        def unavailable(request, timeout):
+            nonlocal transient_calls
+            transient_calls += 1
+            if transient_calls == 1:
+                raise HTTPError(
+                    request.full_url, 503, "service unavailable", {}, None
+                )
+            return Response(request.full_url)
+
+        official_source.urlopen = unavailable
+        result = official_source.fetch_official_source(source_url)
+        _require(result.content == b"[]", "transient HTTP retry lost content")
+        _require(transient_calls == 2, "transient HTTP retry count changed")
+    finally:
+        official_source.urlopen = original_open
+        official_source.time.sleep = original_sleep
+    return "permanent_http_not_retried", "transient_http_retried"
+
+
 def main() -> None:
     checks: list[str] = []
     twse = parse_twse_daily_closes(_close_fetcher(TWSE_DAILY_CLOSE_URL).content)
@@ -118,6 +189,7 @@ def main() -> None:
     )
     _require(schedule[0].cash_dividend is None, "unknown cash was treated as zero")
     checks.append("unannounced_dividend_preserved")
+    checks.extend(_check_http_retry_policy())
 
     with tempfile.TemporaryDirectory() as temporary:
         temp = Path(temporary)
