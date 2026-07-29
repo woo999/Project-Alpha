@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from project_alpha.paper_snapshot_io import (
-    load_paper_ledger,
+    load_authenticated_paper_ledger,
     load_snapshot,
 )
 
@@ -13,13 +13,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_published_snapshot_matches_current_ledger():
-    ledger = load_paper_ledger(
-        PROJECT_ROOT / "research/0050_00719B_60_40_preregistration.json",
+    ledger = load_authenticated_paper_ledger(
+        PROJECT_ROOT / "research/preregistration.json",
         PROJECT_ROOT / "data/paper_observations.csv",
+        PROJECT_ROOT / "research/paper_snapshot.json",
     )
-    ledger.verify_snapshot(
-        load_snapshot(PROJECT_ROOT / "research/paper_snapshot.json")
-    )
+    assert ledger.observations[-1].observed_on.isoformat() == "2026-07-28"
 
 
 def test_tampered_snapshot_is_rejected(tmp_path):
@@ -28,12 +27,12 @@ def test_tampered_snapshot_is_rejected(tmp_path):
     document["ledger_hash"] = "0" * 64
     tampered = tmp_path / "paper_snapshot.json"
     tampered.write_text(json.dumps(document), encoding="utf-8")
-    ledger = load_paper_ledger(
-        PROJECT_ROOT / "research/0050_00719B_60_40_preregistration.json",
-        PROJECT_ROOT / "data/paper_observations.csv",
-    )
     with pytest.raises(ValueError, match="does not match"):
-        ledger.verify_snapshot(load_snapshot(tampered))
+        load_authenticated_paper_ledger(
+            PROJECT_ROOT / "research/preregistration.json",
+            PROJECT_ROOT / "data/paper_observations.csv",
+            tampered,
+        )
 
 
 def test_snapshot_schema_is_strict(tmp_path):
