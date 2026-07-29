@@ -49,6 +49,10 @@ def main() -> None:
         symbol="00719B",
     )
     official_closes = {"0050": primary, "00719B": defensive}
+    official_ready = all(
+        value.observed_on == args.expected_date
+        for value in official_closes.values()
+    )
     export_closes = None
     exports = None
     if args.primary_export:
@@ -87,6 +91,7 @@ def main() -> None:
     report = {
         "mode": "paper_only_no_broker",
         "expected_date": args.expected_date.isoformat(),
+        "official_ready": official_ready,
         "ready": not blockers,
         "blockers": list(blockers),
         "sources": {
