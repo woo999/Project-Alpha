@@ -88,15 +88,13 @@ def parse_tpex_daily_closes(payload: bytes) -> tuple[OfficialClose, ...]:
     return tuple(result)
 
 
-def verify_official_close(
+def official_close_for_symbol(
     payload: bytes,
     *,
     source_url: str,
     symbol: str,
-    expected_date: date,
-    expected_close: float,
-) -> None:
-    """Require exactly one official symbol/date row equal to the Mitake close."""
+) -> OfficialClose:
+    """Return the one current official row for a symbol."""
     parsed = urlparse(source_url)
     host = (parsed.hostname or "").lower()
     if (
@@ -111,15 +109,34 @@ def verify_official_close(
         rows = parse_tpex_daily_closes(payload)
     else:
         raise ValueError("unsupported official daily close source")
-    matches = [
-        row
-        for row in rows
-        if row.symbol == symbol and row.observed_on == expected_date
-    ]
+    matches = [row for row in rows if row.symbol == symbol]
     if len(matches) != 1:
-        raise ValueError("official close must contain exactly one symbol/date row")
+        raise ValueError("official close must contain exactly one symbol row")
+    return matches[0]
+
+
+def verify_official_close(
+    payload: bytes,
+    *,
+    source_url: str,
+    symbol: str,
+    expected_date: date,
+    expected_close: float,
+) -> None:
+    """Require exactly one official symbol/date row equal to the Mitake close."""
+    official = official_close_for_symbol(
+        payload,
+        source_url=source_url,
+        symbol=symbol,
+    )
+    if official.observed_on != expected_date:
+        raise ValueError(
+            f"official close for {symbol} is dated "
+            f"{official.observed_on.isoformat()}, expected "
+            f"{expected_date.isoformat()}"
+        )
     if not math.isclose(
-        matches[0].close,
+        official.close,
         expected_close,
         rel_tol=0,
         abs_tol=1e-9,
