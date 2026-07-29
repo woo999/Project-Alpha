@@ -180,6 +180,23 @@ def main() -> None:
             raise RuntimeError("unannounced dividend was accepted")
         checks.append("unannounced_dividend_blocked")
 
+        try:
+            verify_official_action_day(
+                unknown_source,
+                source_url="https://www.tpex.org.tw/openapi/v1/tpex_cmode",
+                symbol="00719B",
+                event_date=DAY,
+                actions={},
+            )
+        except ValueError as exc:
+            _require(
+                "unsupported" in str(exc),
+                "unexpected wrong-endpoint error",
+            )
+        else:
+            raise RuntimeError("wrong official action endpoint was accepted")
+        checks.append("exact_action_endpoint_required")
+
         command = [
             sys.executable,
             str(ROOT / "scripts/update_paper_from_mitake.py"),
