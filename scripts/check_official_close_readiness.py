@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from datetime import date
 import json
+from pathlib import Path
 
 from project_alpha.mitake import (
     load_mitake_daily_export,
@@ -18,6 +19,10 @@ from project_alpha.official_close import (
     official_close_for_symbol,
 )
 from project_alpha.official_source import fetch_official_source
+from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,25 +36,46 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--primary-export")
     parser.add_argument("--defensive-export")
     parser.add_argument(
-        "--after-date",
-        type=date.fromisoformat,
-        help="last authenticated paper observation date",
+        "--preregistration",
+        type=Path,
+        default=PROJECT_ROOT / "research/preregistration.json",
+    )
+    parser.add_argument(
+        "--observations",
+        type=Path,
+        default=PROJECT_ROOT / "data/paper_observations.csv",
+    )
+    parser.add_argument(
+        "--snapshot",
+        type=Path,
+        default=PROJECT_ROOT / "research/paper_snapshot.json",
     )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    ledger = load_authenticated_paper_ledger(
+        args.preregistration,
+        args.observations,
+        args.snapshot,
+    )
+    if (
+        ledger.spec.primary_symbol != "0050"
+        or ledger.spec.defensive_symbol != "00719B"
+    ):
+        raise ValueError(
+            "authenticated paper ledger is not the 0050/00719B candidate"
+        )
+    last_observed_on = ledger.observations[-1].observed_on
+    if last_observed_on >= args.expected_date:
+        raise ValueError(
+            "expected_date must be after the authenticated paper ledger"
+        )
     if bool(args.primary_export) != bool(args.defensive_export):
         raise ValueError(
             "primary and defensive Mitake exports must be supplied together"
         )
-    if args.primary_export and args.after_date is None:
-        raise ValueError("--after-date is required with Mitake exports")
-    if args.after_date is not None and not args.primary_export:
-        raise ValueError("--after-date requires both Mitake exports")
-    if args.after_date is not None and args.after_date >= args.expected_date:
-        raise ValueError("--after-date must be before expected_date")
     primary_download = fetch_official_source(TWSE_DAILY_CLOSE_URL)
     defensive_download = fetch_official_source(TPEX_DAILY_CLOSE_URL)
     primary = official_close_for_symbol(
@@ -85,7 +111,7 @@ def main() -> None:
             single_common_bar_after(
                 primary_bars,
                 defensive_bars,
-                after=args.after_date,
+                after=last_observed_on,
                 expected_date=args.expected_date,
             )
         except ValueError as exc:
@@ -122,6 +148,12 @@ def main() -> None:
         "official_ready": official_ready,
         "ready": not blockers,
         "blockers": list(blockers),
+        "ledger": {
+            "last_observed_on": last_observed_on.isoformat(),
+            "observation_count": len(ledger.observations),
+            "ledger_hash": ledger.snapshot().ledger_hash,
+            "snapshot_verified": True,
+        },
         "sources": {
             "0050": {
                 "observed_on": primary.observed_on.isoformat(),
@@ -135,8 +167,6 @@ def main() -> None:
             },
         },
     }
-    if args.after_date is not None:
-        report["after_date"] = args.after_date.isoformat()
     if exports is not None:
         report["exports"] = exports
     print(
