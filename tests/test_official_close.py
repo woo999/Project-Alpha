@@ -6,6 +6,8 @@ import pytest
 from project_alpha.official_close import (
     TPEX_DAILY_CLOSE_URL,
     TWSE_DAILY_CLOSE_URL,
+    OfficialClose,
+    close_readiness_blockers,
     parse_tpex_daily_closes,
     parse_twse_daily_closes,
     official_close_for_symbol,
@@ -120,3 +122,39 @@ def test_symbol_lookup_is_independent_of_expected_date():
     )
     assert result.observed_on == date(2026, 7, 28)
     assert result.close == pytest.approx(97.15)
+
+
+def test_readiness_reports_official_export_dates_and_price_conflict():
+    expected = date(2026, 7, 29)
+    blockers = close_readiness_blockers(
+        expected_date=expected,
+        official_closes={
+            "0050": OfficialClose(date(2026, 7, 28), "0050", 97.15),
+            "00719B": OfficialClose(expected, "00719B", 31.48),
+        },
+        export_closes={
+            "0050": OfficialClose(date(2026, 7, 28), "0050", 97.15),
+            "00719B": OfficialClose(expected, "00719B", 31.46),
+        },
+    )
+    assert blockers == (
+        "0050 official date is 2026-07-28, expected 2026-07-29",
+        "0050 Mitake date is 2026-07-28, expected 2026-07-29",
+        "00719B Mitake close conflicts with official close",
+    )
+
+
+def test_readiness_accepts_matching_official_and_export_closes():
+    expected = date(2026, 7, 29)
+    closes = {
+        "0050": OfficialClose(expected, "0050", 98.15),
+        "00719B": OfficialClose(expected, "00719B", 31.48),
+    }
+    assert (
+        close_readiness_blockers(
+            expected_date=expected,
+            official_closes=closes,
+            export_closes=closes,
+        )
+        == ()
+    )
