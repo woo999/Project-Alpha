@@ -6,6 +6,7 @@ import pytest
 from project_alpha.daily_action_evidence import (
     TPEX_ACTION_SCHEDULE_URL,
     TWSE_ACTION_SCHEDULE_URL,
+    load_daily_action_evidence,
     prepare_daily_action_evidence,
 )
 from project_alpha.official_source import OfficialSourceDownload
@@ -69,6 +70,12 @@ def test_daily_evidence_is_published_as_one_complete_directory(tmp_path):
     assert json.loads((output / "manifest.json").read_text())[
         "verified_through"
     ] == "2026-07-29"
+    loaded = load_daily_action_evidence(
+        output,
+        primary_action_path=primary,
+        defensive_action_path=defensive,
+    )
+    assert loaded.verified_through == date(2026, 7, 29)
 
 
 def test_conflict_leaves_no_partial_daily_directory(tmp_path):
@@ -103,4 +110,25 @@ def test_existing_daily_evidence_cannot_be_overwritten(tmp_path):
             defensive_action_path=defensive,
             output_root=root,
             fetcher=_fake_fetcher(),
+        )
+
+
+def test_tampered_or_misdated_package_is_rejected(tmp_path):
+    primary = tmp_path / "0050.csv"
+    defensive = tmp_path / "00719B.csv"
+    _actions(primary)
+    _actions(defensive)
+    output = prepare_daily_action_evidence(
+        verified_through=date(2026, 7, 29),
+        primary_action_path=primary,
+        defensive_action_path=defensive,
+        output_root=tmp_path / "evidence",
+        fetcher=_fake_fetcher(),
+    )
+    (output / "0050_official_schedule.json").write_text("[{}]")
+    with pytest.raises(ValueError, match="manifest"):
+        load_daily_action_evidence(
+            output,
+            primary_action_path=primary,
+            defensive_action_path=defensive,
         )
