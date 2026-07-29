@@ -22,7 +22,7 @@ def test_file_evidence_changes_with_content(tmp_path):
 
 def test_batch_audit_links_sources_and_ledger_hashes(tmp_path):
     paths = []
-    for index in range(4):
+    for index in range(7):
         path = tmp_path / f"source-{index}.txt"
         path.write_text(str(index), encoding="utf-8")
         paths.append(path)
@@ -44,10 +44,16 @@ def test_batch_audit_links_sources_and_ledger_hashes(tmp_path):
         defensive_actions={day: PaperAction(1.0, 0.0)},
         primary_actions_verified_through=day,
         defensive_actions_verified_through=day,
+        close_evidence_manifest_path=paths[4],
+        primary_close_source_path=paths[5],
+        defensive_close_source_path=paths[6],
     )
     assert audit["prior_ledger_hash"] == "1" * 64
     assert audit["new_ledger_hash"] == "2" * 64
     assert audit["appended_dates"] == ["2026-07-29"]
     assert audit["inputs"]["primary_export"]["byte_count"] == 1
     assert audit["inputs"]["primary_actions"]["verified_through"] == "2026-07-29"
+    assert audit["inputs"]["close_evidence_manifest"]["byte_count"] == 1
+    assert audit["inputs"]["primary_close_source"]["byte_count"] == 1
+    assert audit["inputs"]["defensive_close_source"]["byte_count"] == 1
     assert audit["safety"]["orders_placed"] is False
