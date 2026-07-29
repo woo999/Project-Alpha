@@ -139,6 +139,10 @@ def main() -> None:
             primary_close_source_path = close_package.primary_source_path
             defensive_close_source_path = close_package.defensive_source_path
             close_evidence_verified = True
+        if args.write and not close_evidence_verified:
+            raise ValueError(
+                "official close evidence package is required with --write"
+            )
         if args.action_evidence_dir is not None:
             if any(
                 value is not None
