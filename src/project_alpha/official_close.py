@@ -38,6 +38,8 @@ def close_readiness_blockers(
     if export_closes is not None and set(export_closes) != set(official_closes):
         raise ValueError("export symbols must exactly match official symbols")
     blockers = []
+    if export_closes is None:
+        blockers.append("Mitake exports were not supplied")
     for symbol in sorted(official_closes):
         official = official_closes[symbol]
         if official.symbol != symbol:
