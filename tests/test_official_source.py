@@ -1,3 +1,5 @@
+from urllib.error import HTTPError
+
 import pytest
 
 from project_alpha import official_source
@@ -92,6 +94,45 @@ def test_transient_timeout_is_retried_within_bound(monkeypatch):
         return Response(b"[]", request.full_url)
 
     monkeypatch.setattr(official_source, "urlopen", flaky)
+    monkeypatch.setattr(official_source.time, "sleep", lambda seconds: None)
+    result = official_source.fetch_official_source(
+        "https://www.tpex.org.tw/openapi/v1/example"
+    )
+    assert result.content == b"[]"
+    assert calls == 2
+
+
+def test_permanent_http_error_is_not_retried(monkeypatch):
+    calls = 0
+
+    def missing(request, timeout):
+        nonlocal calls
+        calls += 1
+        raise HTTPError(request.full_url, 404, "not found", {}, None)
+
+    monkeypatch.setattr(official_source, "urlopen", missing)
+    monkeypatch.setattr(official_source.time, "sleep", lambda seconds: None)
+    with pytest.raises(HTTPError) as exc_info:
+        official_source.fetch_official_source(
+            "https://www.tpex.org.tw/openapi/v1/example"
+        )
+    assert exc_info.value.code == 404
+    assert calls == 1
+
+
+def test_transient_http_error_is_retried(monkeypatch):
+    calls = 0
+
+    def unavailable(request, timeout):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise HTTPError(
+                request.full_url, 503, "service unavailable", {}, None
+            )
+        return Response(b"[]", request.full_url)
+
+    monkeypatch.setattr(official_source, "urlopen", unavailable)
     monkeypatch.setattr(official_source.time, "sleep", lambda seconds: None)
     result = official_source.fetch_official_source(
         "https://www.tpex.org.tw/openapi/v1/example"
