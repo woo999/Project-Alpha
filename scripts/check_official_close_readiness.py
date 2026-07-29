@@ -6,7 +6,10 @@ import argparse
 from datetime import date
 import json
 
-from project_alpha.mitake import load_mitake_daily_export
+from project_alpha.mitake import (
+    load_mitake_daily_export,
+    single_common_bar_after,
+)
 from project_alpha.official_close import (
     OfficialClose,
     TPEX_DAILY_CLOSE_URL,
@@ -27,6 +30,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("expected_date", type=date.fromisoformat)
     parser.add_argument("--primary-export")
     parser.add_argument("--defensive-export")
+    parser.add_argument(
+        "--after-date",
+        type=date.fromisoformat,
+        help="last authenticated paper observation date",
+    )
     return parser.parse_args()
 
 
@@ -36,6 +44,12 @@ def main() -> None:
         raise ValueError(
             "primary and defensive Mitake exports must be supplied together"
         )
+    if args.primary_export and args.after_date is None:
+        raise ValueError("--after-date is required with Mitake exports")
+    if args.after_date is not None and not args.primary_export:
+        raise ValueError("--after-date requires both Mitake exports")
+    if args.after_date is not None and args.after_date >= args.expected_date:
+        raise ValueError("--after-date must be before expected_date")
     primary_download = fetch_official_source(TWSE_DAILY_CLOSE_URL)
     defensive_download = fetch_official_source(TPEX_DAILY_CLOSE_URL)
     primary = official_close_for_symbol(
@@ -55,15 +69,27 @@ def main() -> None:
     )
     export_closes = None
     exports = None
+    sequence_blocker = None
     if args.primary_export:
-        primary_export = load_mitake_daily_export(
+        primary_bars = load_mitake_daily_export(
             args.primary_export,
             expected_symbol="0050",
-        )[-1]
-        defensive_export = load_mitake_daily_export(
+        )
+        defensive_bars = load_mitake_daily_export(
             args.defensive_export,
             expected_symbol="00719B",
-        )[-1]
+        )
+        primary_export = primary_bars[-1]
+        defensive_export = defensive_bars[-1]
+        try:
+            single_common_bar_after(
+                primary_bars,
+                defensive_bars,
+                after=args.after_date,
+                expected_date=args.expected_date,
+            )
+        except ValueError as exc:
+            sequence_blocker = str(exc)
         export_closes = {
             "0050": OfficialClose(
                 primary_export.observed_on,
@@ -88,6 +114,8 @@ def main() -> None:
         official_closes=official_closes,
         export_closes=export_closes,
     )
+    if sequence_blocker is not None:
+        blockers += (sequence_blocker,)
     report = {
         "mode": "paper_only_no_broker",
         "expected_date": args.expected_date.isoformat(),
@@ -107,6 +135,8 @@ def main() -> None:
             },
         },
     }
+    if args.after_date is not None:
+        report["after_date"] = args.after_date.isoformat()
     if exports is not None:
         report["exports"] = exports
     print(
