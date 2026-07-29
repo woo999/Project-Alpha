@@ -34,7 +34,11 @@ def _fetcher(primary_close=98.15):
             ]
         elif url == TPEX_DAILY_CLOSE_URL:
             rows = [
-                {"資料日期": "1150729", "代號": "00719B", "收盤": "31.5"}
+                {
+                    "Date": "1150729",
+                    "SecuritiesCompanyCode": "00719B",
+                    "Close": "31.5",
+                }
             ]
         else:
             raise AssertionError("unexpected URL")
