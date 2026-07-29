@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from project_alpha.action_verification import load_action_verification
+from project_alpha.action_schedule import verify_official_action_day
 from project_alpha.mitake import common_bars_after, load_mitake_daily_export
 from project_alpha.paper_audit import build_batch_audit
 from project_alpha.paper_daily import (
@@ -147,6 +148,26 @@ def main() -> None:
                 required_through=required_through,
                 label=ledger.spec.defensive_symbol,
             )
+            if (
+                args.primary_action_source is not None
+                and args.defensive_action_source is not None
+                and args.primary_action_verification is not None
+                and args.defensive_action_verification is not None
+            ):
+                verify_official_action_day(
+                    args.primary_action_source,
+                    source_url=primary_proof.source_url,
+                    symbol=ledger.spec.primary_symbol,
+                    event_date=required_through,
+                    actions=primary_actions,
+                )
+                verify_official_action_day(
+                    args.defensive_action_source,
+                    source_url=defensive_proof.source_url,
+                    symbol=ledger.spec.defensive_symbol,
+                    event_date=required_through,
+                    actions=defensive_actions,
+                )
             action_freshness_verified = True
         audit = build_batch_audit(
             candidate_id=ledger.spec.candidate_id,
