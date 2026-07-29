@@ -9,6 +9,7 @@ from pathlib import Path
 
 from project_alpha.action_verification import load_action_verification
 from project_alpha.action_schedule import verify_official_action_day
+from project_alpha.daily_action_evidence import load_daily_action_evidence
 from project_alpha.mitake import common_bars_after, load_mitake_daily_export
 from project_alpha.paper_audit import build_batch_audit
 from project_alpha.paper_daily import (
@@ -34,6 +35,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("primary_actions", type=Path)
     parser.add_argument("defensive_actions", type=Path)
     parser.add_argument("snapshot", type=Path)
+    parser.add_argument(
+        "--action-evidence-dir",
+        type=Path,
+        help="complete atomic daily evidence package for both symbols",
+    )
     parser.add_argument(
         "--primary-action-verification",
         type=Path,
@@ -103,30 +109,66 @@ def main() -> None:
     action_freshness_verified = False
     primary_verified_through = args.primary_actions_verified_through
     defensive_verified_through = args.defensive_actions_verified_through
+    primary_verification_path = args.primary_action_verification
+    defensive_verification_path = args.defensive_action_verification
+    primary_source_path = args.primary_action_source
+    defensive_source_path = args.defensive_action_source
     if result.appended_dates:
-        if args.primary_action_verification is not None:
-            if args.primary_action_source is None:
+        if args.action_evidence_dir is not None:
+            if any(
+                value is not None
+                for value in (
+                    args.primary_action_verification,
+                    args.defensive_action_verification,
+                    args.primary_action_source,
+                    args.defensive_action_source,
+                    args.primary_actions_verified_through,
+                    args.defensive_actions_verified_through,
+                )
+            ):
+                raise ValueError(
+                    "--action-evidence-dir cannot be mixed with individual "
+                    "action verification options"
+                )
+            package = load_daily_action_evidence(
+                args.action_evidence_dir,
+                primary_action_path=args.primary_actions,
+                defensive_action_path=args.defensive_actions,
+            )
+            primary_verification_path = package.primary_verification_path
+            defensive_verification_path = package.defensive_verification_path
+            primary_source_path = package.primary_source_path
+            defensive_source_path = package.defensive_source_path
+            primary_proof = package.primary_verification
+            defensive_proof = package.defensive_verification
+            primary_verified_through = package.verified_through
+            defensive_verified_through = package.verified_through
+        if primary_verification_path is not None and args.action_evidence_dir is None:
+            if primary_source_path is None:
                 raise ValueError("primary official action source file is required")
             primary_proof = load_action_verification(
-                args.primary_action_verification,
+                primary_verification_path,
                 action_path=args.primary_actions,
-                source_path=args.primary_action_source,
+                source_path=primary_source_path,
                 expected_symbol=ledger.spec.primary_symbol,
             )
             primary_verified_through = primary_proof.verified_through
-        if args.defensive_action_verification is not None:
-            if args.defensive_action_source is None:
+        if (
+            defensive_verification_path is not None
+            and args.action_evidence_dir is None
+        ):
+            if defensive_source_path is None:
                 raise ValueError("defensive official action source file is required")
             defensive_proof = load_action_verification(
-                args.defensive_action_verification,
+                defensive_verification_path,
                 action_path=args.defensive_actions,
-                source_path=args.defensive_action_source,
+                source_path=defensive_source_path,
                 expected_symbol=ledger.spec.defensive_symbol,
             )
             defensive_verified_through = defensive_proof.verified_through
         if args.write and (
-            args.primary_action_verification is None
-            or args.defensive_action_verification is None
+            primary_verification_path is None
+            or defensive_verification_path is None
         ):
             raise ValueError(
                 "both hash-bound action verification documents are required with --write"
@@ -149,20 +191,20 @@ def main() -> None:
                 label=ledger.spec.defensive_symbol,
             )
             if (
-                args.primary_action_source is not None
-                and args.defensive_action_source is not None
-                and args.primary_action_verification is not None
-                and args.defensive_action_verification is not None
+                primary_source_path is not None
+                and defensive_source_path is not None
+                and primary_verification_path is not None
+                and defensive_verification_path is not None
             ):
                 verify_official_action_day(
-                    args.primary_action_source,
+                    primary_source_path,
                     source_url=primary_proof.source_url,
                     symbol=ledger.spec.primary_symbol,
                     event_date=required_through,
                     actions=primary_actions,
                 )
                 verify_official_action_day(
-                    args.defensive_action_source,
+                    defensive_source_path,
                     source_url=defensive_proof.source_url,
                     symbol=ledger.spec.defensive_symbol,
                     event_date=required_through,
@@ -190,10 +232,10 @@ def main() -> None:
             defensive_actions_verified_through=(
                 defensive_verified_through or date.min
             ),
-            primary_action_verification_path=args.primary_action_verification,
-            defensive_action_verification_path=args.defensive_action_verification,
-            primary_action_source_path=args.primary_action_source,
-            defensive_action_source_path=args.defensive_action_source,
+            primary_action_verification_path=primary_verification_path,
+            defensive_action_verification_path=defensive_verification_path,
+            primary_action_source_path=primary_source_path,
+            defensive_action_source_path=defensive_source_path,
         )
     if args.write and result.appended_dates:
         if args.audit_output is None:
