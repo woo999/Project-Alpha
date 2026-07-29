@@ -27,14 +27,14 @@ def test_twse_schedule_parses_roc_date_and_amounts():
     assert item.cash_dividend == pytest.approx(0.6)
 
 
-def test_tpex_schedule_parses_chinese_schema():
+def test_tpex_schedule_parses_current_openapi_schema():
     payload = json.dumps(
         [
             {
-                "除權息日期": "115/07/29",
-                "股票代號": "00719B",
-                "無償配股率": "",
-                "現金股利": "0.27",
+                "ExRrightsExDividendDate": "115/07/29",
+                "SecuritiesCompanyCode": "00719B",
+                "StockDividendRatio": "",
+                "CashDividend": "0.27",
             }
         ],
         ensure_ascii=False,
@@ -74,3 +74,32 @@ def test_saved_schedule_must_agree_with_action_csv(tmp_path):
         event_date=date(2026, 7, 29),
         actions={date(2026, 7, 29): PaperAction(1.0, 0.6)},
     )
+
+
+def test_unannounced_cash_dividend_cannot_verify_action_csv(tmp_path):
+    source = tmp_path / "tpex.json"
+    source.write_text(
+        json.dumps(
+            [
+                {
+                    "ExRrightsExDividendDate": "1150731",
+                    "SecuritiesCompanyCode": "00719B",
+                    "StockDividendRatio": "0.00000000",
+                    "CashDividend": "尚未公告",
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="not yet announced"):
+        verify_official_action_day(
+            source,
+            source_url=(
+                "https://www.tpex.org.tw/openapi/v1/"
+                "tpex_exright_prepost"
+            ),
+            symbol="00719B",
+            event_date=date(2026, 7, 31),
+            actions={date(2026, 7, 31): PaperAction(1.0, 0.27)},
+        )
