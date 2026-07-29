@@ -49,6 +49,8 @@ def build_batch_audit(
     defensive_actions_verified_through: date,
     primary_action_verification_path: Path | None = None,
     defensive_action_verification_path: Path | None = None,
+    primary_action_source_path: Path | None = None,
+    defensive_action_source_path: Path | None = None,
 ) -> dict[str, object]:
     """Build a stable audit document that can be committed with the ledger."""
     if observation_count_after - observation_count_before != len(appended_dates):
@@ -98,6 +100,14 @@ def build_batch_audit(
     if defensive_action_verification_path is not None:
         inputs["defensive_action_verification"] = asdict(
             file_evidence(defensive_action_verification_path)
+        )
+    if primary_action_source_path is not None:
+        inputs["primary_action_source"] = asdict(
+            file_evidence(primary_action_source_path)
+        )
+    if defensive_action_source_path is not None:
+        inputs["defensive_action_source"] = asdict(
+            file_evidence(defensive_action_source_path)
         )
 
     return {
