@@ -8,6 +8,7 @@ from project_alpha.official_close import (
     TWSE_DAILY_CLOSE_URL,
     parse_tpex_daily_closes,
     parse_twse_daily_closes,
+    official_close_for_symbol,
     verify_official_close,
 )
 
@@ -93,3 +94,29 @@ def test_missing_or_duplicate_symbol_date_is_rejected():
             expected_date=date(2026, 7, 29),
             expected_close=98.15,
         )
+
+
+def test_date_mismatch_reports_available_official_date():
+    rows = [{"Date": "1150728", "Code": "0050", "ClosingPrice": "97.15"}]
+    with pytest.raises(
+        ValueError,
+        match="dated 2026-07-28, expected 2026-07-29",
+    ):
+        verify_official_close(
+            json.dumps(rows).encode(),
+            source_url=TWSE_DAILY_CLOSE_URL,
+            symbol="0050",
+            expected_date=date(2026, 7, 29),
+            expected_close=98.15,
+        )
+
+
+def test_symbol_lookup_is_independent_of_expected_date():
+    rows = [{"Date": "1150728", "Code": "0050", "ClosingPrice": "97.15"}]
+    result = official_close_for_symbol(
+        json.dumps(rows).encode(),
+        source_url=TWSE_DAILY_CLOSE_URL,
+        symbol="0050",
+    )
+    assert result.observed_on == date(2026, 7, 28)
+    assert result.close == pytest.approx(97.15)
