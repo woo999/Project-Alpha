@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import time
+from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 from project_alpha.action_verification import validate_official_source_url
@@ -37,6 +39,8 @@ def fetch_official_source(
     *,
     timeout: float = 30.0,
     max_bytes: int = MAX_OFFICIAL_SOURCE_BYTES,
+    attempts: int = 3,
+    retry_delay: float = 0.5,
 ) -> OfficialSourceDownload:
     """Download one bounded official response; never accesses broker services."""
     validate_official_source_url(source_url)
@@ -44,6 +48,10 @@ def fetch_official_source(
         raise ValueError("timeout must be positive")
     if max_bytes <= 0 or max_bytes > MAX_OFFICIAL_SOURCE_BYTES:
         raise ValueError("max_bytes is outside the safe range")
+    if attempts < 1 or attempts > 3:
+        raise ValueError("attempts must be between 1 and 3")
+    if retry_delay < 0 or retry_delay > 5:
+        raise ValueError("retry_delay is outside the safe range")
     request = Request(
         source_url,
         headers={
@@ -51,13 +59,22 @@ def fetch_official_source(
             "User-Agent": "Project-Alpha research/1.0",
         },
     )
-    with urlopen(request, timeout=timeout) as response:
-        final_url = response.geturl()
-        validate_official_source_url(final_url)
-        content_type = response.headers.get_content_type().lower()
-        if content_type not in ALLOWED_CONTENT_TYPES:
-            raise ValueError(f"unsupported official response type: {content_type}")
-        content = response.read(max_bytes + 1)
+    for attempt in range(attempts):
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                final_url = response.geturl()
+                validate_official_source_url(final_url)
+                content_type = response.headers.get_content_type().lower()
+                if content_type not in ALLOWED_CONTENT_TYPES:
+                    raise ValueError(
+                        f"unsupported official response type: {content_type}"
+                    )
+                content = response.read(max_bytes + 1)
+            break
+        except (TimeoutError, URLError):
+            if attempt + 1 == attempts:
+                raise
+            time.sleep(retry_delay * (2**attempt))
     if not content:
         raise ValueError("official source response is empty")
     if len(content) > max_bytes:
