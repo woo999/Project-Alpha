@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
 import json
@@ -23,6 +24,51 @@ class OfficialClose:
     observed_on: date
     symbol: str
     close: float
+
+
+def close_readiness_blockers(
+    *,
+    expected_date: date,
+    official_closes: Mapping[str, OfficialClose],
+    export_closes: Mapping[str, OfficialClose] | None = None,
+) -> tuple[str, ...]:
+    """Explain why official and optional Mitake closes are not write-ready."""
+    if not official_closes:
+        raise ValueError("official closes cannot be empty")
+    if export_closes is not None and set(export_closes) != set(official_closes):
+        raise ValueError("export symbols must exactly match official symbols")
+    blockers = []
+    for symbol in sorted(official_closes):
+        official = official_closes[symbol]
+        if official.symbol != symbol:
+            raise ValueError("official close symbol does not match mapping key")
+        if official.observed_on != expected_date:
+            blockers.append(
+                f"{symbol} official date is {official.observed_on.isoformat()}, "
+                f"expected {expected_date.isoformat()}"
+            )
+        if export_closes is None:
+            continue
+        export = export_closes[symbol]
+        if export.symbol != symbol:
+            raise ValueError("export close symbol does not match mapping key")
+        if export.observed_on != expected_date:
+            blockers.append(
+                f"{symbol} Mitake date is {export.observed_on.isoformat()}, "
+                f"expected {expected_date.isoformat()}"
+            )
+        if (
+            official.observed_on == expected_date
+            and export.observed_on == expected_date
+            and not math.isclose(
+                official.close,
+                export.close,
+                rel_tol=0,
+                abs_tol=1e-9,
+            )
+        ):
+            blockers.append(f"{symbol} Mitake close conflicts with official close")
+    return tuple(blockers)
 
 
 def _roc_date(value: object) -> date:
