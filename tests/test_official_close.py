@@ -158,3 +158,15 @@ def test_readiness_accepts_matching_official_and_export_closes():
         )
         == ()
     )
+
+
+def test_readiness_requires_mitake_exports_even_when_official_dates_match():
+    expected = date(2026, 7, 29)
+    official = {
+        "0050": OfficialClose(expected, "0050", 98.15),
+        "00719B": OfficialClose(expected, "00719B", 31.48),
+    }
+    assert close_readiness_blockers(
+        expected_date=expected,
+        official_closes=official,
+    ) == ("Mitake exports were not supplied",)
