@@ -127,3 +127,32 @@ def append_official_daily_mark(
             "real_capital_deployed": 0,
         },
     }
+
+
+def append_official_bundle_mark(
+    ledger: PaperLedger,
+    *,
+    bundle_dir: str | Path,
+    primary_actions_path: str | Path,
+    defensive_actions_path: str | Path,
+) -> dict[str, object]:
+    """Verify the outer four-source bundle before appending its daily mark."""
+    from project_alpha.official_paper_bundle import load_official_paper_bundle
+
+    bundle = load_official_paper_bundle(
+        bundle_dir,
+        primary_action_path=primary_actions_path,
+        defensive_action_path=defensive_actions_path,
+    )
+    root = Path(bundle_dir)
+    audit = append_official_daily_mark(
+        ledger,
+        close_evidence_dir=root / "close" / bundle.observed_on.isoformat(),
+        action_evidence_dir=root / "actions" / bundle.observed_on.isoformat(),
+        primary_actions_path=primary_actions_path,
+        defensive_actions_path=defensive_actions_path,
+    )
+    audit["official_bundle_manifest"] = asdict(
+        file_evidence(bundle.manifest_path)
+    )
+    return audit
