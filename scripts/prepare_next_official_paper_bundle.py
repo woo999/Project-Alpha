@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from urllib.error import HTTPError, URLError
 
 from project_alpha.next_official_bundle import (
     OfficialDatesNotSynchronized,
@@ -12,6 +13,28 @@ from project_alpha.next_official_bundle import (
 )
 from project_alpha.official_paper_bundle import load_official_paper_bundle
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
+
+
+def source_unavailable_result(
+    exc: HTTPError | URLError | TimeoutError | OSError,
+    *,
+    last_observed_on: str,
+) -> dict[str, object]:
+    """Describe an operational source failure without exposing a traceback."""
+    if isinstance(exc, HTTPError):
+        error = f"HTTP {exc.code}"
+    else:
+        error = type(exc).__name__
+    return {
+        "mode": "paper_only_no_broker",
+        "ready": False,
+        "reason": "official close source unavailable",
+        "source_error": {
+            "error": error,
+            "url": getattr(exc, "url", None),
+        },
+        "last_observed_on": last_observed_on,
+    }
 
 
 def main() -> None:
@@ -50,6 +73,20 @@ def main() -> None:
                         ledger.observations[-1].observed_on.isoformat()
                     ),
                 },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return
+    except (HTTPError, URLError, TimeoutError, OSError) as exc:
+        print(
+            json.dumps(
+                source_unavailable_result(
+                    exc,
+                    last_observed_on=(
+                        ledger.observations[-1].observed_on.isoformat()
+                    ),
+                ),
                 indent=2,
                 sort_keys=True,
             )
