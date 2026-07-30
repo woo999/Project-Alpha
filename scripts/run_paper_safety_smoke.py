@@ -6,6 +6,7 @@ from datetime import date
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -40,6 +41,7 @@ from project_alpha.official_source import OfficialSourceDownload
 from project_alpha.paper_daily import PaperAction
 from project_alpha.official_paper_update import append_official_daily_mark
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
+from project_alpha.paper_evidence_chain import verify_paper_evidence_chain
 from project_alpha.paper_tracking import PaperLedger
 
 
@@ -221,6 +223,43 @@ def main() -> None:
             "authenticated ledger boundary changed",
         )
         checks.append("authenticated_paper_ledger_loaded")
+        chain = verify_paper_evidence_chain(
+            ledger,
+            audit_dir=ROOT / "research/audits",
+            evidence_dir=ROOT / "research/official_evidence",
+        )
+        _require(
+            chain["ledger_hash"] == ledger.ledger_hash,
+            "official evidence chain lost the authenticated ledger",
+        )
+        checks.append("official_evidence_chain_verified")
+        copied_audits = temp / "audits"
+        copied_evidence = temp / "official-evidence"
+        shutil.copytree(ROOT / "research/audits", copied_audits)
+        shutil.copytree(ROOT / "research/official_evidence", copied_evidence)
+        tampered_summary_path = copied_evidence / "2026-07-30.json"
+        tampered_summary = json.loads(
+            tampered_summary_path.read_text(encoding="utf-8")
+        )
+        tampered_summary["closes"]["0050"]["raw_sha256"] = "0" * 64
+        tampered_summary_path.write_text(
+            json.dumps(tampered_summary),
+            encoding="utf-8",
+        )
+        try:
+            verify_paper_evidence_chain(
+                ledger,
+                audit_dir=copied_audits,
+                evidence_dir=copied_evidence,
+            )
+        except ValueError as exc:
+            _require(
+                "SHA-256" in str(exc),
+                "tampered evidence failed for the wrong reason",
+            )
+        else:
+            raise RuntimeError("tampered official evidence was accepted")
+        checks.append("tampered_official_evidence_rejected")
 
         snapshot_document["ledger_hash"] = "0" * 64
         tampered_snapshot = temp / "tampered-paper-snapshot.json"
