@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from project_alpha.official_close import (
@@ -44,10 +45,9 @@ def prepare_next_official_paper_bundle(
     ):
         raise ValueError("next-date discovery supports only the 0050/00719B candidate")
 
-    downloads = {
-        TWSE_DAILY_CLOSE_URL: fetcher(TWSE_DAILY_CLOSE_URL),
-        TPEX_DAILY_CLOSE_URL: fetcher(TPEX_DAILY_CLOSE_URL),
-    }
+    close_urls = (TWSE_DAILY_CLOSE_URL, TPEX_DAILY_CLOSE_URL)
+    with ThreadPoolExecutor(max_workers=len(close_urls)) as executor:
+        downloads = dict(zip(close_urls, executor.map(fetcher, close_urls), strict=True))
     primary = official_close_for_symbol(
         downloads[TWSE_DAILY_CLOSE_URL].content,
         source_url=downloads[TWSE_DAILY_CLOSE_URL].final_url,
