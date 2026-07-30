@@ -19,8 +19,7 @@ from project_alpha.paper_daily import (
     validate_action_freshness,
 )
 from project_alpha.paper_snapshot_io import (
-    load_paper_ledger,
-    load_snapshot,
+    load_authenticated_paper_ledger,
     write_checkpoint,
 )
 
@@ -91,8 +90,11 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    ledger = load_paper_ledger(args.preregistration, args.observations)
-    ledger.verify_snapshot(load_snapshot(args.snapshot))
+    ledger = load_authenticated_paper_ledger(
+        args.preregistration,
+        args.observations,
+        args.snapshot,
+    )
     prior_ledger_hash = ledger.ledger_hash
     observation_count_before = len(ledger.observations)
     last_observed_on = ledger.observations[-1].observed_on
