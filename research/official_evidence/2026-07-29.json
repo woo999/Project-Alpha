@@ -1,0 +1,40 @@
+{
+  "format_version": "official-evidence-summary-v1",
+  "mode": "paper_only_no_broker",
+  "observed_on": "2026-07-29",
+  "closes": {
+    "0050": {
+      "close": 93.7,
+      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/STOCK_DAY_AVG_ALL",
+      "raw_byte_count": 3105666,
+      "raw_sha256": "a1db6bb8a090b1ee1351f66fbf3944592028605bf9b2bfc20bf1bbeac08d6b99"
+    },
+    "00719B": {
+      "close": 31.48,
+      "source_url": "https://www.tpex.org.tw/openapi/v1/tpex_mainboard_daily_close_quotes",
+      "raw_byte_count": 4008812,
+      "raw_sha256": "e6b7659588f3a5c17953eb592e87e72ec7374049dd5879e0bf41c5983f8b06ba"
+    }
+  },
+  "corporate_actions": {
+    "0050": {
+      "event_on_observed_date": false,
+      "source_url": "https://openapi.twse.com.tw/v1/exchangeReport/TWT48U_ALL",
+      "raw_byte_count": 30301,
+      "raw_sha256": "a646d36fa52a533cd51464c766767f1ea66e058379f93a5cd4d3e1ee2bc2f903"
+    },
+    "00719B": {
+      "event_on_observed_date": false,
+      "source_url": "https://www.tpex.org.tw/openapi/v1/tpex_exright_prepost",
+      "raw_byte_count": 58710,
+      "raw_sha256": "f64eda04708e5b23f99a6a7aa894bd2de774ad6ba4ab179a96b489b89859a521"
+    }
+  },
+  "bundle_manifest_sha256": "2cff17177e67deb462bd887931ea7ef69aca1529ae02572bb055e02c64901268",
+  "new_ledger_hash": "f9557fd596b01f98a5ddf9a52827337aae7669828b2403d870264d0c0328ea95",
+  "safety": {
+    "broker_connected": false,
+    "orders_placed": false,
+    "real_capital_deployed": 0
+  }
+}
