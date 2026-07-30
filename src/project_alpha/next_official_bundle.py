@@ -15,6 +15,18 @@ from project_alpha.official_source import OfficialSourceDownload, fetch_official
 from project_alpha.paper_tracking import PaperLedger
 
 
+class OfficialDatesNotSynchronized(ValueError):
+    """The two official markets have not published the same latest date."""
+
+    def __init__(self, *, primary_date: str, defensive_date: str) -> None:
+        self.primary_date = primary_date
+        self.defensive_date = defensive_date
+        super().__init__(
+            "official close sources are not synchronized: "
+            f"0050={primary_date}, 00719B={defensive_date}"
+        )
+
+
 def prepare_next_official_paper_bundle(
     ledger: PaperLedger,
     *,
@@ -47,10 +59,9 @@ def prepare_next_official_paper_bundle(
         symbol="00719B",
     )
     if primary.observed_on != defensive.observed_on:
-        raise ValueError(
-            "official close sources are not synchronized: "
-            f"0050={primary.observed_on.isoformat()}, "
-            f"00719B={defensive.observed_on.isoformat()}"
+        raise OfficialDatesNotSynchronized(
+            primary_date=primary.observed_on.isoformat(),
+            defensive_date=defensive.observed_on.isoformat(),
         )
     newest = primary.observed_on
     last_observed_on = ledger.observations[-1].observed_on
