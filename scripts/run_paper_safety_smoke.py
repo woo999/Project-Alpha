@@ -43,7 +43,7 @@ from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DAY = date(2026, 7, 29)
+DAY = date(2026, 7, 30)
 
 
 def _require(condition: bool, message: str) -> None:
@@ -63,8 +63,8 @@ def _close_fetcher(url: str) -> OfficialSourceDownload:
     if url == TWSE_DAILY_CLOSE_URL:
         return _download(
             [
-                {"Date": "1150729", "Code": "00682U", "ClosingPrice": ""},
-                {"Date": "1150729", "Code": "0050", "ClosingPrice": "98.15"},
+                {"Date": "1150730", "Code": "00682U", "ClosingPrice": ""},
+                {"Date": "1150730", "Code": "0050", "ClosingPrice": "98.15"},
             ],
             url,
         )
@@ -72,12 +72,12 @@ def _close_fetcher(url: str) -> OfficialSourceDownload:
         return _download(
             [
                 {
-                    "Date": "1150729",
+                    "Date": "1150730",
                     "SecuritiesCompanyCode": "006201",
                     "Close": "---",
                 },
                 {
-                    "Date": "1150729",
+                    "Date": "1150730",
                     "SecuritiesCompanyCode": "00719B",
                     "Close": "31.50",
                 },
@@ -97,7 +97,7 @@ def _write_export(path: Path, symbol: str, close: str) -> None:
     path.write_text(
         f"商品代碼:{symbol}\t商品名稱:test\n\n"
         "日期\t開盤價\t最高價\t最低價\t收盤價\t成交量\n"
-        f"'2026/07/29 00:00\t{close}\t{close}\t{close}\t{close}\t100\n",
+        f"'2026/07/30 00:00\t{close}\t{close}\t{close}\t{close}\t100\n",
         encoding="utf-8-sig",
     )
 
@@ -184,7 +184,7 @@ def main() -> None:
 
     unannounced = [
         {
-            "ExRrightsExDividendDate": "1150729",
+            "ExRrightsExDividendDate": "1150730",
             "SecuritiesCompanyCode": "00719B",
             "StockDividendRatio": "0.00000000",
             "CashDividend": "尚未公告",
@@ -205,7 +205,7 @@ def main() -> None:
             ROOT / "research/paper_snapshot.json",
         )
         _require(
-            ledger.observations[-1].observed_on == date(2026, 7, 28),
+            ledger.observations[-1].observed_on == date(2026, 7, 29),
             "authenticated ledger boundary changed",
         )
         checks.append("authenticated_paper_ledger_loaded")
@@ -285,6 +285,7 @@ def main() -> None:
         )
         checks.append("action_evidence_round_trip")
 
+        count_before_official_update = len(ledger.observations)
         audit = append_official_daily_mark(
             ledger,
             close_evidence_dir=official_close_package,
@@ -293,7 +294,7 @@ def main() -> None:
             defensive_actions_path=ROOT / "research/00719B_actions.csv",
         )
         _require(
-            len(ledger.observations) == 2
+            len(ledger.observations) == count_before_official_update + 1
             and ledger.observations[-1].observed_on == DAY,
             "official-only updater did not append exactly one target day",
         )
