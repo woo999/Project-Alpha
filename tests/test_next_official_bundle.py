@@ -7,7 +7,10 @@ from project_alpha.daily_action_evidence import (
     TPEX_ACTION_SCHEDULE_URL,
     TWSE_ACTION_SCHEDULE_URL,
 )
-from project_alpha.next_official_bundle import prepare_next_official_paper_bundle
+from project_alpha.next_official_bundle import (
+    OfficialDatesNotSynchronized,
+    prepare_next_official_paper_bundle,
+)
 from project_alpha.official_close import TPEX_DAILY_CLOSE_URL, TWSE_DAILY_CLOSE_URL
 from project_alpha.official_paper_bundle import load_official_paper_bundle
 from project_alpha.official_source import OfficialSourceDownload
@@ -100,7 +103,7 @@ def test_no_new_date_does_not_fetch_actions(tmp_path):
 
 
 def test_mismatched_official_dates_leave_no_package(tmp_path):
-    with pytest.raises(ValueError, match="not synchronized"):
+    with pytest.raises(OfficialDatesNotSynchronized, match="not synchronized"):
         prepare_next_official_paper_bundle(
             _ledger(),
             primary_action_path=tmp_path / "unused-a.csv",
