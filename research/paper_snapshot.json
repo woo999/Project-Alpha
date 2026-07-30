@@ -1,17 +1,18 @@
 {
   "candidate_fingerprint": "030fe5731c49e01c2ca6ba4d3a039414f9b002a19a6aec31925cd21bfeed80cb",
   "decision": {
-    "cumulative_return": null,
+    "cumulative_return": -0.021048019098191206,
     "eligible": false,
-    "maximum_drawdown": null,
-    "observation_count": 1,
+    "maximum_drawdown": -0.021048019098191206,
+    "observation_count": 2,
     "passed": false,
     "reasons": [
-      "insufficient forward observations"
+      "requires 252 forward observations",
+      "forward cumulative return is not positive"
     ]
   },
   "format_version": "paper-ledger-v1",
-  "last_observed_on": "2026-07-28",
-  "ledger_hash": "b9c6f0e24963e2a582e5f2518eac055a99b0b30cd53d4b5f90729553414cdb38",
-  "observation_count": 1
+  "last_observed_on": "2026-07-29",
+  "ledger_hash": "f9557fd596b01f98a5ddf9a52827337aae7669828b2403d870264d0c0328ea95",
+  "observation_count": 2
 }
