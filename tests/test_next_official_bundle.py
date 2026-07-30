@@ -1,6 +1,7 @@
 from datetime import date
 import json
 from threading import Barrier
+from urllib.error import HTTPError
 
 import pytest
 
@@ -16,6 +17,7 @@ from project_alpha.official_close import TPEX_DAILY_CLOSE_URL, TWSE_DAILY_CLOSE_
 from project_alpha.official_paper_bundle import load_official_paper_bundle
 from project_alpha.official_source import OfficialSourceDownload
 from project_alpha.paper_tracking import CandidateSpec, PaperLedger, PaperObservation
+from scripts.prepare_next_official_paper_bundle import source_unavailable_result
 
 
 def _ledger(last=date(2026, 7, 29)):
@@ -130,3 +132,27 @@ def test_mismatched_official_dates_leave_no_package(tmp_path):
             fetcher=_fetcher("1150730", "1150729"),
         )
     assert not (tmp_path / "output" / "2026-07-30").exists()
+
+
+def test_source_failure_is_reported_as_not_ready():
+    error = HTTPError(
+        TWSE_DAILY_CLOSE_URL,
+        502,
+        "Bad Gateway",
+        hdrs=None,
+        fp=None,
+    )
+    result = source_unavailable_result(
+        error,
+        last_observed_on="2026-07-29",
+    )
+    assert result == {
+        "mode": "paper_only_no_broker",
+        "ready": False,
+        "reason": "official close source unavailable",
+        "source_error": {
+            "error": "HTTP 502",
+            "url": TWSE_DAILY_CLOSE_URL,
+        },
+        "last_observed_on": "2026-07-29",
+    }
