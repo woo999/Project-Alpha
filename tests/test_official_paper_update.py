@@ -8,7 +8,11 @@ from project_alpha.daily_official_close_evidence import (
     prepare_daily_official_close_evidence,
 )
 from project_alpha.official_close import TPEX_DAILY_CLOSE_URL, TWSE_DAILY_CLOSE_URL
-from project_alpha.official_paper_update import append_official_daily_mark
+from project_alpha.official_paper_bundle import prepare_official_paper_bundle
+from project_alpha.official_paper_update import (
+    append_official_bundle_mark,
+    append_official_daily_mark,
+)
 from project_alpha.official_source import OfficialSourceDownload
 from project_alpha.paper_tracking import CandidateSpec, PaperLedger, PaperObservation
 
@@ -115,6 +119,32 @@ def test_mismatched_evidence_dates_leave_ledger_unchanged(tmp_path):
             ledger,
             close_evidence_dir=close_dir,
             action_evidence_dir=action_dir,
+            primary_actions_path=primary_actions,
+            defensive_actions_path=defensive_actions,
+        )
+    assert len(ledger.observations) == 1
+
+
+def test_outer_bundle_manifest_is_required(tmp_path):
+    primary_actions = tmp_path / "0050.csv"
+    defensive_actions = tmp_path / "00719B.csv"
+    _actions(primary_actions)
+    _actions(defensive_actions)
+    bundle = prepare_official_paper_bundle(
+        observed_on=DAY,
+        primary_action_path=primary_actions,
+        defensive_action_path=defensive_actions,
+        output_root=tmp_path / "bundle",
+        fetcher=_fetcher,
+    )
+    document = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+    document["manifests"]["close"] = "0" * 64
+    (bundle / "manifest.json").write_text(json.dumps(document), encoding="utf-8")
+    ledger = _ledger()
+    with pytest.raises(ValueError, match="close manifest"):
+        append_official_bundle_mark(
+            ledger,
+            bundle_dir=bundle,
             primary_actions_path=primary_actions,
             defensive_actions_path=defensive_actions,
         )
