@@ -6,7 +6,10 @@ import argparse
 import json
 from pathlib import Path
 
-from project_alpha.next_official_bundle import prepare_next_official_paper_bundle
+from project_alpha.next_official_bundle import (
+    OfficialDatesNotSynchronized,
+    prepare_next_official_paper_bundle,
+)
 from project_alpha.official_paper_bundle import load_official_paper_bundle
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
 
@@ -25,12 +28,33 @@ def main() -> None:
     ledger = load_authenticated_paper_ledger(
         args.preregistration, args.observations, args.snapshot
     )
-    output = prepare_next_official_paper_bundle(
-        ledger,
-        primary_action_path=args.primary_actions,
-        defensive_action_path=args.defensive_actions,
-        output_root=args.output_root,
-    )
+    try:
+        output = prepare_next_official_paper_bundle(
+            ledger,
+            primary_action_path=args.primary_actions,
+            defensive_action_path=args.defensive_actions,
+            output_root=args.output_root,
+        )
+    except OfficialDatesNotSynchronized as exc:
+        print(
+            json.dumps(
+                {
+                    "mode": "paper_only_no_broker",
+                    "ready": False,
+                    "reason": "official close sources are not synchronized",
+                    "official_dates": {
+                        "0050": exc.primary_date,
+                        "00719B": exc.defensive_date,
+                    },
+                    "last_observed_on": (
+                        ledger.observations[-1].observed_on.isoformat()
+                    ),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return
     if output is None:
         result = {
             "mode": "paper_only_no_broker",
