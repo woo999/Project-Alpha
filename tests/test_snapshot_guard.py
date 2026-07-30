@@ -18,7 +18,7 @@ def test_published_snapshot_matches_current_ledger():
         PROJECT_ROOT / "data/paper_observations.csv",
         PROJECT_ROOT / "research/paper_snapshot.json",
     )
-    assert ledger.observations[-1].observed_on.isoformat() == "2026-07-28"
+    assert ledger.observations[-1].observed_on.isoformat() == "2026-07-29"
 
 
 def test_tampered_snapshot_is_rejected(tmp_path):
