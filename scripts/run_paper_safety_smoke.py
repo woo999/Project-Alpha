@@ -40,6 +40,7 @@ from project_alpha.official_source import OfficialSourceDownload
 from project_alpha.paper_daily import PaperAction
 from project_alpha.official_paper_update import append_official_daily_mark
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
+from project_alpha.paper_tracking import PaperLedger
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -93,11 +94,18 @@ def _action_fetcher(url: str) -> OfficialSourceDownload:
     raise RuntimeError(f"unexpected action URL: {url}")
 
 
-def _write_export(path: Path, symbol: str, close: str) -> None:
+def _write_export(
+    path: Path,
+    symbol: str,
+    close: str,
+    *,
+    observed_on: date = DAY,
+) -> None:
     path.write_text(
         f"商品代碼:{symbol}\t商品名稱:test\n\n"
         "日期\t開盤價\t最高價\t最低價\t收盤價\t成交量\n"
-        f"'2026/07/30 00:00\t{close}\t{close}\t{close}\t{close}\t100\n",
+        f"'{observed_on:%Y/%m/%d} 00:00\t"
+        f"{close}\t{close}\t{close}\t{close}\t100\n",
         encoding="utf-8-sig",
     )
 
@@ -204,15 +212,16 @@ def main() -> None:
             ROOT / "data/paper_observations.csv",
             ROOT / "research/paper_snapshot.json",
         )
+        snapshot_document = json.loads(
+            (ROOT / "research/paper_snapshot.json").read_text(encoding="utf-8")
+        )
         _require(
-            ledger.observations[-1].observed_on == date(2026, 7, 29),
+            ledger.observations[-1].observed_on.isoformat()
+            == snapshot_document["last_observed_on"],
             "authenticated ledger boundary changed",
         )
         checks.append("authenticated_paper_ledger_loaded")
 
-        snapshot_document = json.loads(
-            (ROOT / "research/paper_snapshot.json").read_text(encoding="utf-8")
-        )
         snapshot_document["ledger_hash"] = "0" * 64
         tampered_snapshot = temp / "tampered-paper-snapshot.json"
         tampered_snapshot.write_text(
@@ -285,17 +294,29 @@ def main() -> None:
         )
         checks.append("action_evidence_round_trip")
 
-        count_before_official_update = len(ledger.observations)
+        synthetic_ledger = PaperLedger(
+            ledger.spec,
+            [
+                observation
+                for observation in ledger.observations
+                if observation.observed_on < DAY
+            ],
+        )
+        _require(
+            synthetic_ledger.observations,
+            "official-only updater needs a pre-target synthetic boundary",
+        )
+        count_before_official_update = len(synthetic_ledger.observations)
         audit = append_official_daily_mark(
-            ledger,
+            synthetic_ledger,
             close_evidence_dir=official_close_package,
             action_evidence_dir=action_package,
             primary_actions_path=ROOT / "research/0050_actions.csv",
             defensive_actions_path=ROOT / "research/00719B_actions.csv",
         )
         _require(
-            len(ledger.observations) == count_before_official_update + 1
-            and ledger.observations[-1].observed_on == DAY,
+            len(synthetic_ledger.observations) == count_before_official_update + 1
+            and synthetic_ledger.observations[-1].observed_on == DAY,
             "official-only updater did not append exactly one target day",
         )
         _require(
@@ -343,6 +364,19 @@ def main() -> None:
             raise RuntimeError("wrong official action endpoint was accepted")
         checks.append("exact_action_endpoint_required")
 
+        unsafe_day = date(2026, 7, 31)
+        _write_export(
+            primary_export,
+            "0050",
+            "98.15",
+            observed_on=unsafe_day,
+        )
+        _write_export(
+            defensive_export,
+            "00719B",
+            "31.50",
+            observed_on=unsafe_day,
+        )
         command = [
             sys.executable,
             str(ROOT / "scripts/update_paper_from_mitake.py"),
