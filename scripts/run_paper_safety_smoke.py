@@ -26,6 +26,10 @@ from project_alpha.daily_close_evidence import (
     load_daily_close_evidence,
     prepare_daily_close_evidence,
 )
+from project_alpha.daily_official_close_evidence import (
+    load_daily_official_close_evidence,
+    prepare_daily_official_close_evidence,
+)
 from project_alpha.official_close import (
     TPEX_DAILY_CLOSE_URL,
     TWSE_DAILY_CLOSE_URL,
@@ -228,6 +232,20 @@ def main() -> None:
         else:
             raise RuntimeError("tampered paper snapshot was accepted")
         checks.append("tampered_paper_snapshot_rejected")
+
+        official_close_package = prepare_daily_official_close_evidence(
+            expected_date=DAY,
+            output_root=temp / "official-close",
+            fetcher=_close_fetcher,
+        )
+        official_close = load_daily_official_close_evidence(
+            official_close_package
+        )
+        _require(
+            official_close.observed_on == DAY,
+            "official-only close evidence date changed",
+        )
+        checks.append("official_only_close_evidence_round_trip")
 
         primary_export = temp / "0050.txt"
         defensive_export = temp / "00719B.txt"
