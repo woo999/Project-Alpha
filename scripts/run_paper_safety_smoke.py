@@ -38,6 +38,7 @@ from project_alpha.official_close import (
 )
 from project_alpha.official_source import OfficialSourceDownload
 from project_alpha.paper_daily import PaperAction
+from project_alpha.official_paper_update import append_official_daily_mark
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
 
 
@@ -283,6 +284,24 @@ def main() -> None:
             "action evidence date changed",
         )
         checks.append("action_evidence_round_trip")
+
+        audit = append_official_daily_mark(
+            ledger,
+            close_evidence_dir=official_close_package,
+            action_evidence_dir=action_package,
+            primary_actions_path=ROOT / "research/0050_actions.csv",
+            defensive_actions_path=ROOT / "research/00719B_actions.csv",
+        )
+        _require(
+            len(ledger.observations) == 2
+            and ledger.observations[-1].observed_on == DAY,
+            "official-only updater did not append exactly one target day",
+        )
+        _require(
+            audit["safety"]["orders_placed"] is False,
+            "official-only updater audit changed paper safety state",
+        )
+        checks.append("official_only_paper_update_dry_run")
 
         unknown_source = temp / "unknown-action.json"
         unknown_source.write_text(
