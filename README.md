@@ -67,22 +67,31 @@ Research results are not guarantees of future returns. Transaction costs,
 slippage, liquidity, and out-of-sample validation must be included before any
 strategy is considered for live testing.
 
-## Offline paper-ledger checkpoint
+## Authenticated paper status and readiness
 
-After a preregistration is explicitly marked `PAPER_TRACKING_ACTIVE`, validate
-the local observation CSV and write a deterministic, tamper-evident checkpoint:
+All paper commands verify the published tamper-evident snapshot before trusting
+the ledger. This read-only status command cannot connect to a broker or place
+orders:
 
 ```powershell
 $env:PYTHONPATH = "src"
-python scripts\snapshot_paper_ledger.py `
-  research\0050_00719B_60_40_preregistration.json `
+python scripts\report_paper_status.py `
+  research\preregistration.json `
   data\paper_observations.csv `
   research\paper_snapshot.json
 ```
 
-The CSV schema is fixed to `observed_on, portfolio_value, primary_close,
-defensive_close, primary_units, defensive_units, cash_balance, turnover_today,
-charged_transaction_costs_today`. The command refuses blocked candidates,
-historical or duplicate dates, unreconciled positions, off-schedule turnover,
-understated costs, and off-target rebalance weights. It reads and writes local
-files only and cannot connect to a broker or place orders.
+After exporting both Mitake daily files, check the next paper date against the
+authenticated ledger and the free TWSE/TPEx closing feeds:
+
+```powershell
+python scripts\check_official_close_readiness.py 2026-07-29 `
+  --primary-export C:\path\to\0050__D.txt `
+  --defensive-export C:\path\to\00719B__D.txt
+```
+
+The readiness command is read-only. It reports `ready: true` only when the
+snapshot, single-day sequence, symbols, dates, and both official closing prices
+agree. Evidence creation and ledger writes remain separate guarded steps. The
+paper ledger is research-only, prohibits leverage and broker connectivity, and
+is not evidence of live readiness.
