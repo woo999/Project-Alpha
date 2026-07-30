@@ -1,5 +1,6 @@
 from datetime import date
 import json
+from threading import Barrier
 
 import pytest
 
@@ -99,7 +100,24 @@ def test_no_new_date_does_not_fetch_actions(tmp_path):
         output_root=tmp_path / "output",
         fetcher=tracked,
     ) is None
-    assert calls == [TWSE_DAILY_CLOSE_URL, TPEX_DAILY_CLOSE_URL]
+    assert set(calls) == {TWSE_DAILY_CLOSE_URL, TPEX_DAILY_CLOSE_URL}
+
+
+def test_close_sources_are_fetched_concurrently(tmp_path):
+    rendezvous = Barrier(2)
+    fetch = _fetcher("1150729", "1150729")
+
+    def synchronized(url):
+        rendezvous.wait(timeout=1)
+        return fetch(url)
+
+    assert prepare_next_official_paper_bundle(
+        _ledger(),
+        primary_action_path=tmp_path / "unused-a.csv",
+        defensive_action_path=tmp_path / "unused-b.csv",
+        output_root=tmp_path / "output",
+        fetcher=synchronized,
+    ) is None
 
 
 def test_mismatched_official_dates_leave_no_package(tmp_path):
