@@ -11,6 +11,7 @@ from urllib.error import HTTPError, URLError
 from project_alpha.next_official_bundle import (
     OfficialDateNotMature,
     OfficialDatesNotSynchronized,
+    OfficialSourceContentInvalid,
 )
 from project_alpha.official_paper_advance import advance_next_official_paper
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
@@ -66,6 +67,22 @@ def run_advance(
                 "reason": "same-day official close is not mature",
                 "official_date": exc.observed_on,
                 "available_after": exc.available_after,
+                "last_observed_on": last_observed_on,
+            },
+            0,
+        )
+    except OfficialSourceContentInvalid as exc:
+        return (
+            {
+                "mode": "paper_only_no_broker",
+                "ready": False,
+                "advanced": False,
+                "write_requested": args.write,
+                "reason": "official source content is invalid",
+                "source_error": {
+                    "error": exc.detail,
+                    "url": exc.source_url,
+                },
                 "last_observed_on": last_observed_on,
             },
             0,
