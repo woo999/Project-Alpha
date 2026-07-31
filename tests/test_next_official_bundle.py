@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 import json
 from threading import Barrier
 from urllib.error import HTTPError
@@ -10,6 +10,7 @@ from project_alpha.daily_action_evidence import (
     TWSE_ACTION_SCHEDULE_URL,
 )
 from project_alpha.next_official_bundle import (
+    OfficialDateNotMature,
     OfficialDatesNotSynchronized,
     prepare_next_official_paper_bundle,
 )
@@ -131,6 +132,27 @@ def test_mismatched_official_dates_leave_no_package(tmp_path):
             output_root=tmp_path / "output",
             fetcher=_fetcher("1150730", "1150729"),
         )
+    assert not (tmp_path / "output" / "2026-07-30").exists()
+
+
+def test_same_day_before_close_cutoff_does_not_fetch_actions(tmp_path):
+    calls = []
+    fetch = _fetcher()
+
+    def tracked(url):
+        calls.append(url)
+        return fetch(url)
+
+    with pytest.raises(OfficialDateNotMature, match="not mature"):
+        prepare_next_official_paper_bundle(
+            _ledger(),
+            primary_action_path=tmp_path / "unused-a.csv",
+            defensive_action_path=tmp_path / "unused-b.csv",
+            output_root=tmp_path / "output",
+            fetcher=tracked,
+            now=datetime.fromisoformat("2026-07-30T13:30:00+08:00"),
+        )
+    assert set(calls) == {TWSE_DAILY_CLOSE_URL, TPEX_DAILY_CLOSE_URL}
     assert not (tmp_path / "output" / "2026-07-30").exists()
 
 
