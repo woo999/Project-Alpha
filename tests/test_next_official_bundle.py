@@ -156,6 +156,40 @@ def test_same_day_before_close_cutoff_does_not_fetch_actions(tmp_path):
     assert not (tmp_path / "output" / "2026-07-30").exists()
 
 
+def test_same_day_at_close_cutoff_prepares_complete_bundle(tmp_path):
+    calls = []
+    fetch = _fetcher()
+    primary = tmp_path / "0050.csv"
+    defensive = tmp_path / "00719B.csv"
+    _actions(primary)
+    _actions(defensive)
+
+    def tracked(url):
+        calls.append(url)
+        return fetch(url)
+
+    output = prepare_next_official_paper_bundle(
+        _ledger(),
+        primary_action_path=primary,
+        defensive_action_path=defensive,
+        output_root=tmp_path / "output",
+        fetcher=tracked,
+        now=datetime.fromisoformat("2026-07-30T14:30:00+08:00"),
+    )
+    loaded = load_official_paper_bundle(
+        output,
+        primary_action_path=primary,
+        defensive_action_path=defensive,
+    )
+    assert loaded.observed_on == date(2026, 7, 30)
+    assert set(calls) == {
+        TWSE_DAILY_CLOSE_URL,
+        TPEX_DAILY_CLOSE_URL,
+        TWSE_ACTION_SCHEDULE_URL,
+        TPEX_ACTION_SCHEDULE_URL,
+    }
+
+
 def test_source_failure_is_reported_as_not_ready():
     error = HTTPError(
         TWSE_DAILY_CLOSE_URL,
