@@ -12,7 +12,7 @@ import sys
 import tempfile
 from urllib.error import HTTPError
 
-from project_alpha import official_source
+from project_alpha import official_source, paper_snapshot_io
 from project_alpha.action_schedule import (
     parse_tpex_action_schedule,
     verify_official_action_day,
@@ -309,6 +309,67 @@ def main() -> None:
             "declared official corporate action was rejected",
         )
         checks.append("declared_official_action_supported")
+        rollback_observations = temp / "rollback-observations.csv"
+        rollback_snapshot = temp / "rollback-snapshot.json"
+        rollback_audit = temp / "rollback-audit.json"
+        rollback_summary = temp / "rollback-summary.json"
+        rollback_paths = (
+            rollback_observations,
+            rollback_snapshot,
+            rollback_audit,
+            rollback_summary,
+        )
+        for path, content in zip(
+            rollback_paths,
+            ("old observations\n", "old snapshot\n", "old audit\n", "old summary\n"),
+            strict=True,
+        ):
+            path.write_text(content, encoding="utf-8")
+        original_replace = paper_snapshot_io._replace_file
+        replace_calls = 0
+
+        def fail_fourth_replace(source: Path, destination: Path) -> None:
+            nonlocal replace_calls
+            replace_calls += 1
+            if replace_calls == 4:
+                raise OSError("simulated evidence-summary failure")
+            original_replace(source, destination)
+
+        paper_snapshot_io._replace_file = fail_fourth_replace
+        try:
+            try:
+                paper_snapshot_io.write_checkpoint(
+                    ledger,
+                    rollback_observations,
+                    rollback_snapshot,
+                    additional_text_files={
+                        rollback_audit: "new audit\n",
+                        rollback_summary: "new summary\n",
+                    },
+                )
+            except OSError as exc:
+                _require(
+                    "evidence-summary" in str(exc),
+                    "four-file rollback failed for the wrong reason",
+                )
+            else:
+                raise RuntimeError("fourth checkpoint failure was accepted")
+        finally:
+            paper_snapshot_io._replace_file = original_replace
+        _require(
+            tuple(
+                path.read_text(encoding="utf-8")
+                for path in rollback_paths
+            )
+            == (
+                "old observations\n",
+                "old snapshot\n",
+                "old audit\n",
+                "old summary\n",
+            ),
+            "four-file checkpoint rollback left partial output",
+        )
+        checks.append("four_file_checkpoint_rollback")
 
         snapshot_document["ledger_hash"] = "0" * 64
         tampered_snapshot = temp / "tampered-paper-snapshot.json"
