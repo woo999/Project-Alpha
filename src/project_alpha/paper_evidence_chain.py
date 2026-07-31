@@ -6,6 +6,7 @@ import json
 import math
 from pathlib import Path
 
+from project_alpha.paper_daily import load_paper_actions
 from project_alpha.paper_tracking import PaperLedger
 
 
@@ -49,6 +50,8 @@ def verify_paper_evidence_chain(
     *,
     audit_dir: str | Path,
     evidence_dir: str | Path,
+    primary_actions_path: str | Path,
+    defensive_actions_path: str | Path,
 ) -> dict[str, object]:
     """Verify every post-initial observation against its audit and summary."""
     if len(ledger.observations) < 1:
@@ -64,6 +67,10 @@ def verify_paper_evidence_chain(
     evidence_dates = {path.stem for path in evidence_root.glob("*.json")}
     _require_equal(audit_dates, expected_dates, "daily audit file set")
     _require_equal(evidence_dates, expected_dates, "official evidence file set")
+    action_dates = {
+        "0050": set(load_paper_actions(primary_actions_path)),
+        "00719B": set(load_paper_actions(defensive_actions_path)),
+    }
 
     for observation_count in range(2, len(ledger.observations) + 1):
         observation = ledger.observations[observation_count - 1]
@@ -171,9 +178,12 @@ def verify_paper_evidence_chain(
         )
         for symbol in ("0050", "00719B"):
             entry = actions.get(symbol)
-            if not isinstance(entry, dict) or entry.get("event_on_observed_date") is not False:
+            if not isinstance(entry, dict):
+                raise ValueError(f"{symbol} corporate-action summary is malformed")
+            expected_event = observation.observed_on in action_dates[symbol]
+            if entry.get("event_on_observed_date") is not expected_event:
                 raise ValueError(
-                    f"{symbol} corporate-action status is not explicitly no-event"
+                    f"{symbol} corporate-action status does not match its action ledger"
                 )
 
     return {
