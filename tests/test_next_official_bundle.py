@@ -12,6 +12,7 @@ from project_alpha.daily_action_evidence import (
 from project_alpha.next_official_bundle import (
     OfficialDateNotMature,
     OfficialDatesNotSynchronized,
+    OfficialSourceContentInvalid,
     prepare_next_official_paper_bundle,
 )
 from project_alpha.official_close import TPEX_DAILY_CLOSE_URL, TWSE_DAILY_CLOSE_URL
@@ -121,6 +122,31 @@ def test_close_sources_are_fetched_concurrently(tmp_path):
         output_root=tmp_path / "output",
         fetcher=synchronized,
     ) is None
+
+
+def test_truncated_close_source_is_rejected_without_package(tmp_path):
+    normal = _fetcher("1150730", "1150730")
+
+    def truncated(url):
+        if url == TPEX_DAILY_CLOSE_URL:
+            return OfficialSourceDownload(
+                b'[{"Date":"1150730","SecuritiesCompanyCode":"00719B"',
+                url,
+                "application/json",
+            )
+        return normal(url)
+
+    with pytest.raises(OfficialSourceContentInvalid) as caught:
+        prepare_next_official_paper_bundle(
+            _ledger(),
+            primary_action_path=tmp_path / "unused-a.csv",
+            defensive_action_path=tmp_path / "unused-b.csv",
+            output_root=tmp_path / "output",
+            fetcher=truncated,
+        )
+    assert caught.value.source_url == TPEX_DAILY_CLOSE_URL
+    assert caught.value.detail == "JSONDecodeError"
+    assert not (tmp_path / "output" / "2026-07-30").exists()
 
 
 def test_mismatched_official_dates_leave_no_package(tmp_path):
