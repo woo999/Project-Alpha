@@ -487,6 +487,33 @@ def main() -> None:
             "pre-close guard fetched actions or left an evidence bundle",
         )
         checks.append("same_day_preclose_value_blocked")
+        cutoff_calls: list[str] = []
+
+        def tracked_cutoff_fetcher(url: str) -> OfficialSourceDownload:
+            cutoff_calls.append(url)
+            return _bundle_fetcher(url)
+
+        cutoff_bundle = prepare_next_official_paper_bundle(
+            synthetic_ledger,
+            primary_action_path=ROOT / "research/0050_actions.csv",
+            defensive_action_path=ROOT / "research/00719B_actions.csv",
+            output_root=temp / "cutoff-bundles",
+            fetcher=tracked_cutoff_fetcher,
+            now=datetime.fromisoformat("2026-07-30T14:30:00+08:00"),
+        )
+        _require(
+            cutoff_bundle is not None
+            and cutoff_bundle.name == DAY.isoformat()
+            and set(cutoff_calls)
+            == {
+                TWSE_DAILY_CLOSE_URL,
+                TPEX_DAILY_CLOSE_URL,
+                TWSE_ACTION_SCHEDULE_URL,
+                TPEX_ACTION_SCHEDULE_URL,
+            },
+            "close cutoff did not enable the complete four-source bundle",
+        )
+        checks.append("same_day_close_cutoff_allows_complete_bundle")
         count_before_official_update = len(synthetic_ledger.observations)
         audit = append_official_daily_mark(
             synthetic_ledger,
