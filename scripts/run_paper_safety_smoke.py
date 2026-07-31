@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 import json
 import os
 from pathlib import Path
@@ -43,6 +43,10 @@ from project_alpha.official_evidence_summary import (
 )
 from project_alpha.official_paper_bundle import prepare_official_paper_bundle
 from project_alpha.official_paper_advance import advance_next_official_paper
+from project_alpha.next_official_bundle import (
+    OfficialDateNotMature,
+    prepare_next_official_paper_bundle,
+)
 from project_alpha.official_source import OfficialSourceDownload
 from project_alpha.paper_daily import PaperAction
 from project_alpha.official_paper_update import (
@@ -458,6 +462,31 @@ def main() -> None:
             synthetic_ledger.observations,
             "official-only updater needs a pre-target synthetic boundary",
         )
+        preclose_calls: list[str] = []
+
+        def tracked_preclose_fetcher(url: str) -> OfficialSourceDownload:
+            preclose_calls.append(url)
+            return _bundle_fetcher(url)
+
+        try:
+            prepare_next_official_paper_bundle(
+                synthetic_ledger,
+                primary_action_path=ROOT / "research/0050_actions.csv",
+                defensive_action_path=ROOT / "research/00719B_actions.csv",
+                output_root=temp / "preclose-bundles",
+                fetcher=tracked_preclose_fetcher,
+                now=datetime.fromisoformat("2026-07-30T13:30:00+08:00"),
+            )
+        except OfficialDateNotMature:
+            pass
+        else:
+            raise RuntimeError("same-day pre-close official value was accepted")
+        _require(
+            set(preclose_calls) == {TWSE_DAILY_CLOSE_URL, TPEX_DAILY_CLOSE_URL}
+            and not (temp / "preclose-bundles" / DAY.isoformat()).exists(),
+            "pre-close guard fetched actions or left an evidence bundle",
+        )
+        checks.append("same_day_preclose_value_blocked")
         count_before_official_update = len(synthetic_ledger.observations)
         audit = append_official_daily_mark(
             synthetic_ledger,
@@ -616,6 +645,24 @@ def main() -> None:
             "temporary official source failure stopped being a safe no-op",
         )
         checks.append("official_source_failure_is_nonfatal")
+
+        def fail_immature_date(*args, **kwargs):
+            raise OfficialDateNotMature(observed_on=DAY)
+
+        immature_result, immature_exit = run_advance(
+            advance_args,
+            ledger,
+            advance=fail_immature_date,
+        )
+        _require(
+            immature_exit == 0
+            and immature_result["reason"]
+            == "same-day official close is not mature"
+            and immature_result["available_after"]
+            == "2026-07-30T14:30:00+08:00",
+            "same-day maturity guard was not reported as a safe no-op",
+        )
+        checks.append("same_day_preclose_status_is_nonfatal")
 
         unknown_source = temp / "unknown-action.json"
         unknown_source.write_text(
