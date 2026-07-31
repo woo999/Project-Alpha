@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date, datetime, time
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from project_alpha.official_close import (
     TPEX_DAILY_CLOSE_URL,
@@ -14,6 +16,10 @@ from project_alpha.official_close import (
 from project_alpha.official_paper_bundle import prepare_official_paper_bundle
 from project_alpha.official_source import OfficialSourceDownload, fetch_official_source
 from project_alpha.paper_tracking import PaperLedger
+
+
+TAIPEI_TIME_ZONE = ZoneInfo("Asia/Taipei")
+SAME_DAY_OFFICIAL_NOT_BEFORE = time(14, 30)
 
 
 class OfficialDatesNotSynchronized(ValueError):
@@ -28,6 +34,21 @@ class OfficialDatesNotSynchronized(ValueError):
         )
 
 
+class OfficialDateNotMature(ValueError):
+    """The source date is today but the conservative close cutoff has not passed."""
+
+    def __init__(self, *, observed_on: date) -> None:
+        self.observed_on = observed_on.isoformat()
+        self.available_after = (
+            f"{self.observed_on}T{SAME_DAY_OFFICIAL_NOT_BEFORE.isoformat()}"
+            "+08:00"
+        )
+        super().__init__(
+            "same-day official close is not mature before "
+            f"{self.available_after}"
+        )
+
+
 def prepare_next_official_paper_bundle(
     ledger: PaperLedger,
     *,
@@ -35,6 +56,7 @@ def prepare_next_official_paper_bundle(
     defensive_action_path: str | Path,
     output_root: str | Path,
     fetcher: Callable[[str], OfficialSourceDownload] = fetch_official_source,
+    now: datetime | None = None,
 ) -> Path | None:
     """Use one pair of official close responses to select the next date."""
     if not ledger.observations:
@@ -69,6 +91,18 @@ def prepare_next_official_paper_bundle(
         raise ValueError("official close date is older than the paper ledger")
     if newest == last_observed_on:
         return None
+    checked_at = now or datetime.now(TAIPEI_TIME_ZONE)
+    if checked_at.tzinfo is None or checked_at.utcoffset() is None:
+        raise ValueError("official maturity clock must be timezone-aware")
+    taipei_now = checked_at.astimezone(TAIPEI_TIME_ZONE)
+    if newest > taipei_now.date():
+        raise ValueError("official close date is in the future")
+    if (
+        newest == taipei_now.date()
+        and taipei_now.time().replace(tzinfo=None)
+        < SAME_DAY_OFFICIAL_NOT_BEFORE
+    ):
+        raise OfficialDateNotMature(observed_on=newest)
 
     def cached_fetcher(url: str) -> OfficialSourceDownload:
         return downloads[url] if url in downloads else fetcher(url)
