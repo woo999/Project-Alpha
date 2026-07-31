@@ -49,6 +49,33 @@ class OfficialDateNotMature(ValueError):
         )
 
 
+class OfficialSourceContentInvalid(ValueError):
+    """An official response arrived but could not be safely interpreted."""
+
+    def __init__(self, *, source_url: str, detail: str) -> None:
+        self.source_url = source_url
+        self.detail = detail
+        super().__init__(f"invalid official source content from {source_url}: {detail}")
+
+
+def _official_close_from_download(
+    download: OfficialSourceDownload,
+    *,
+    symbol: str,
+):
+    try:
+        return official_close_for_symbol(
+            download.content,
+            source_url=download.final_url,
+            symbol=symbol,
+        )
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise OfficialSourceContentInvalid(
+            source_url=download.final_url,
+            detail=type(exc).__name__,
+        ) from exc
+
+
 def prepare_next_official_paper_bundle(
     ledger: PaperLedger,
     *,
@@ -70,14 +97,12 @@ def prepare_next_official_paper_bundle(
     close_urls = (TWSE_DAILY_CLOSE_URL, TPEX_DAILY_CLOSE_URL)
     with ThreadPoolExecutor(max_workers=len(close_urls)) as executor:
         downloads = dict(zip(close_urls, executor.map(fetcher, close_urls), strict=True))
-    primary = official_close_for_symbol(
-        downloads[TWSE_DAILY_CLOSE_URL].content,
-        source_url=downloads[TWSE_DAILY_CLOSE_URL].final_url,
+    primary = _official_close_from_download(
+        downloads[TWSE_DAILY_CLOSE_URL],
         symbol="0050",
     )
-    defensive = official_close_for_symbol(
-        downloads[TPEX_DAILY_CLOSE_URL].content,
-        source_url=downloads[TPEX_DAILY_CLOSE_URL].final_url,
+    defensive = _official_close_from_download(
+        downloads[TPEX_DAILY_CLOSE_URL],
         symbol="00719B",
     )
     if primary.observed_on != defensive.observed_on:
