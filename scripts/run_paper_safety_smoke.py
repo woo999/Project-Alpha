@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 from urllib.error import HTTPError
 
 from project_alpha import official_source, paper_snapshot_io
@@ -51,6 +52,7 @@ from project_alpha.official_paper_update import (
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
 from project_alpha.paper_evidence_chain import verify_paper_evidence_chain
 from project_alpha.paper_tracking import PaperLedger
+from scripts.advance_official_paper import run_advance
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -565,6 +567,55 @@ def main() -> None:
             "one-command official advance duplicated the current date",
         )
         checks.append("one_command_official_advance_noop")
+
+        advance_args = SimpleNamespace(
+            observations=temp / "unused-observations.csv",
+            snapshot=temp / "unused-snapshot.json",
+            primary_actions=ROOT / "research/0050_actions.csv",
+            defensive_actions=ROOT / "research/00719B_actions.csv",
+            bundle_root=temp / "unused-bundles",
+            audit_dir=temp / "unused-audits",
+            evidence_dir=temp / "unused-evidence",
+            write=True,
+        )
+
+        def fail_local_checkpoint(*args, **kwargs):
+            raise OSError("simulated local checkpoint failure")
+
+        local_result, local_exit = run_advance(
+            advance_args,
+            ledger,
+            advance=fail_local_checkpoint,
+        )
+        _require(
+            local_exit == 1
+            and local_result["reason"] == "local paper checkpoint failure"
+            and "source_error" not in local_result,
+            "local checkpoint failure was misclassified as source unavailability",
+        )
+        checks.append("local_checkpoint_failure_is_fatal")
+
+        def fail_official_source(*args, **kwargs):
+            raise HTTPError(
+                TWSE_DAILY_CLOSE_URL,
+                502,
+                "Bad Gateway",
+                hdrs=None,
+                fp=None,
+            )
+
+        source_result, source_exit = run_advance(
+            advance_args,
+            ledger,
+            advance=fail_official_source,
+        )
+        _require(
+            source_exit == 0
+            and source_result["reason"] == "official source unavailable"
+            and source_result["source_error"]["error"] == "HTTP 502",
+            "temporary official source failure stopped being a safe no-op",
+        )
+        checks.append("official_source_failure_is_nonfatal")
 
         unknown_source = temp / "unknown-action.json"
         unknown_source.write_text(
