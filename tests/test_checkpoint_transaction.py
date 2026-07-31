@@ -75,6 +75,46 @@ def test_checkpoint_rolls_back_if_second_replace_fails(tmp_path, monkeypatch):
     assert snapshot.read_text(encoding="utf-8") == "old snapshot\n"
 
 
+def test_checkpoint_rolls_back_if_fourth_replace_fails(tmp_path, monkeypatch):
+    observations = tmp_path / "observations.csv"
+    snapshot = tmp_path / "snapshot.json"
+    audit = tmp_path / "audit.json"
+    evidence = tmp_path / "evidence.json"
+    paths = (observations, snapshot, audit, evidence)
+    old_contents = (
+        "old observations\n",
+        "old snapshot\n",
+        "old audit\n",
+        "old evidence\n",
+    )
+    for path, content in zip(paths, old_contents, strict=True):
+        path.write_text(content, encoding="utf-8")
+    original_replace = snapshot_io._replace_file
+    calls = 0
+
+    def fail_fourth(source, destination):
+        nonlocal calls
+        calls += 1
+        if calls == 4:
+            raise OSError("simulated evidence failure")
+        original_replace(source, destination)
+
+    monkeypatch.setattr(snapshot_io, "_replace_file", fail_fourth)
+    with pytest.raises(OSError, match="simulated evidence"):
+        snapshot_io.write_checkpoint(
+            ledger(),
+            observations,
+            snapshot,
+            additional_text_files={
+                audit: '{"audit":true}\n',
+                evidence: '{"evidence":true}\n',
+            },
+        )
+    assert tuple(
+        path.read_text(encoding="utf-8") for path in paths
+    ) == old_contents
+
+
 def _write_preregistration(tmp_path):
     path = tmp_path / "preregistration.json"
     path.write_text(
