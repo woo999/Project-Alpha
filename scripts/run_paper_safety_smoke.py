@@ -227,6 +227,8 @@ def main() -> None:
             ledger,
             audit_dir=ROOT / "research/audits",
             evidence_dir=ROOT / "research/official_evidence",
+            primary_actions_path=ROOT / "research/0050_actions.csv",
+            defensive_actions_path=ROOT / "research/00719B_actions.csv",
         )
         _require(
             chain["ledger_hash"] == ledger.ledger_hash,
@@ -251,6 +253,8 @@ def main() -> None:
                 ledger,
                 audit_dir=copied_audits,
                 evidence_dir=copied_evidence,
+                primary_actions_path=ROOT / "research/0050_actions.csv",
+                defensive_actions_path=ROOT / "research/00719B_actions.csv",
             )
         except ValueError as exc:
             _require(
@@ -260,6 +264,38 @@ def main() -> None:
         else:
             raise RuntimeError("tampered official evidence was accepted")
         checks.append("tampered_official_evidence_rejected")
+        event_evidence = temp / "official-event-evidence"
+        shutil.copytree(ROOT / "research/official_evidence", event_evidence)
+        event_summary_path = event_evidence / "2026-07-30.json"
+        event_summary = json.loads(
+            event_summary_path.read_text(encoding="utf-8")
+        )
+        event_summary["corporate_actions"]["0050"][
+            "event_on_observed_date"
+        ] = True
+        event_summary_path.write_text(
+            json.dumps(event_summary),
+            encoding="utf-8",
+        )
+        event_actions = temp / "0050-actions-with-target.csv"
+        event_actions.write_text(
+            "date,split_ratio,cash_dividend\n"
+            "2026-07-21,1.0,0.6\n"
+            "2026-07-30,1.0,0.1\n",
+            encoding="utf-8",
+        )
+        event_chain = verify_paper_evidence_chain(
+            ledger,
+            audit_dir=copied_audits,
+            evidence_dir=event_evidence,
+            primary_actions_path=event_actions,
+            defensive_actions_path=ROOT / "research/00719B_actions.csv",
+        )
+        _require(
+            event_chain["valid"] is True,
+            "declared official corporate action was rejected",
+        )
+        checks.append("declared_official_action_supported")
 
         snapshot_document["ledger_hash"] = "0" * 64
         tampered_snapshot = temp / "tampered-paper-snapshot.json"
