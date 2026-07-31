@@ -45,6 +45,7 @@ from project_alpha.official_paper_bundle import prepare_official_paper_bundle
 from project_alpha.official_paper_advance import advance_next_official_paper
 from project_alpha.next_official_bundle import (
     OfficialDateNotMature,
+    OfficialSourceContentInvalid,
     prepare_next_official_paper_bundle,
 )
 from project_alpha.official_source import OfficialSourceDownload
@@ -672,6 +673,30 @@ def main() -> None:
             "temporary official source failure stopped being a safe no-op",
         )
         checks.append("official_source_failure_is_nonfatal")
+
+        def fail_invalid_official_content(*args, **kwargs):
+            raise OfficialSourceContentInvalid(
+                source_url=TPEX_DAILY_CLOSE_URL,
+                detail="JSONDecodeError",
+            )
+
+        invalid_result, invalid_exit = run_advance(
+            advance_args,
+            ledger,
+            advance=fail_invalid_official_content,
+        )
+        _require(
+            invalid_exit == 0
+            and invalid_result["reason"]
+            == "official source content is invalid"
+            and invalid_result["source_error"]
+            == {
+                "error": "JSONDecodeError",
+                "url": TPEX_DAILY_CLOSE_URL,
+            },
+            "malformed official source did not become a safe no-op",
+        )
+        checks.append("invalid_official_source_content_is_nonfatal")
 
         def fail_immature_date(*args, **kwargs):
             raise OfficialDateNotMature(observed_on=DAY)
