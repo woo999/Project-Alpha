@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 
 from project_alpha.next_official_bundle import prepare_next_official_paper_bundle
@@ -29,6 +30,7 @@ def advance_next_official_paper(
     evidence_dir: str | Path,
     write: bool = False,
     fetcher: Callable[[str], OfficialSourceDownload] = fetch_official_source,
+    now: datetime | None = None,
 ) -> dict[str, object]:
     """Discover, verify, and optionally commit exactly one official paper day."""
     if not ledger.observations:
@@ -39,6 +41,7 @@ def advance_next_official_paper(
         defensive_action_path=defensive_actions_path,
         output_root=bundle_root,
         fetcher=fetcher,
+        now=now,
     )
     if output is None:
         return {
