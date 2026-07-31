@@ -37,9 +37,16 @@ from project_alpha.official_close import (
     parse_tpex_daily_closes,
     parse_twse_daily_closes,
 )
+from project_alpha.official_evidence_summary import (
+    build_official_evidence_summary,
+)
+from project_alpha.official_paper_bundle import prepare_official_paper_bundle
 from project_alpha.official_source import OfficialSourceDownload
 from project_alpha.paper_daily import PaperAction
-from project_alpha.official_paper_update import append_official_daily_mark
+from project_alpha.official_paper_update import (
+    append_official_bundle_mark,
+    append_official_daily_mark,
+)
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
 from project_alpha.paper_evidence_chain import verify_paper_evidence_chain
 from project_alpha.paper_tracking import PaperLedger
@@ -94,6 +101,12 @@ def _action_fetcher(url: str) -> OfficialSourceDownload:
     if url in {TWSE_ACTION_SCHEDULE_URL, TPEX_ACTION_SCHEDULE_URL}:
         return _download([], url)
     raise RuntimeError(f"unexpected action URL: {url}")
+
+
+def _bundle_fetcher(url: str) -> OfficialSourceDownload:
+    if url in {TWSE_DAILY_CLOSE_URL, TPEX_DAILY_CLOSE_URL}:
+        return _close_fetcher(url)
+    return _action_fetcher(url)
 
 
 def _write_export(
@@ -399,6 +412,42 @@ def main() -> None:
             "official-only updater audit changed paper safety state",
         )
         checks.append("official_only_paper_update_dry_run")
+        bundle_package = prepare_official_paper_bundle(
+            observed_on=DAY,
+            primary_action_path=ROOT / "research/0050_actions.csv",
+            defensive_action_path=ROOT / "research/00719B_actions.csv",
+            output_root=temp / "official-bundle",
+            fetcher=_bundle_fetcher,
+        )
+        bundle_ledger = PaperLedger(
+            ledger.spec,
+            [
+                observation
+                for observation in ledger.observations
+                if observation.observed_on < DAY
+            ],
+        )
+        bundle_audit = append_official_bundle_mark(
+            bundle_ledger,
+            bundle_dir=bundle_package,
+            primary_actions_path=ROOT / "research/0050_actions.csv",
+            defensive_actions_path=ROOT / "research/00719B_actions.csv",
+        )
+        generated_summary = build_official_evidence_summary(
+            bundle_dir=bundle_package,
+            audit=bundle_audit,
+            primary_actions_path=ROOT / "research/0050_actions.csv",
+            defensive_actions_path=ROOT / "research/00719B_actions.csv",
+        )
+        _require(
+            generated_summary["closes"]["0050"]["close"] == 98.15
+            and generated_summary["corporate_actions"]["0050"][
+                "event_on_observed_date"
+            ]
+            is False,
+            "official evidence summary was not derived from the verified bundle",
+        )
+        checks.append("official_evidence_summary_generated")
 
         unknown_source = temp / "unknown-action.json"
         unknown_source.write_text(
