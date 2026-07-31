@@ -41,6 +41,7 @@ from project_alpha.official_evidence_summary import (
     build_official_evidence_summary,
 )
 from project_alpha.official_paper_bundle import prepare_official_paper_bundle
+from project_alpha.official_paper_advance import advance_next_official_paper
 from project_alpha.official_source import OfficialSourceDownload
 from project_alpha.paper_daily import PaperAction
 from project_alpha.official_paper_update import (
@@ -509,6 +510,61 @@ def main() -> None:
             "official evidence summary was not derived from the verified bundle",
         )
         checks.append("official_evidence_summary_generated")
+
+        advance_ledger = PaperLedger(
+            ledger.spec,
+            [
+                observation
+                for observation in ledger.observations
+                if observation.observed_on < DAY
+            ],
+        )
+        advance_observations = temp / "advance-observations.csv"
+        advance_snapshot = temp / "advance-snapshot.json"
+        advance_audits = temp / "advance-audits"
+        advance_evidence = temp / "advance-evidence"
+        advance_result = advance_next_official_paper(
+            advance_ledger,
+            observations_path=advance_observations,
+            snapshot_path=advance_snapshot,
+            primary_actions_path=ROOT / "research/0050_actions.csv",
+            defensive_actions_path=ROOT / "research/00719B_actions.csv",
+            bundle_root=temp / "advance-bundles",
+            audit_dir=advance_audits,
+            evidence_dir=advance_evidence,
+            write=True,
+            fetcher=_bundle_fetcher,
+        )
+        _require(
+            advance_result["advanced"] is True
+            and advance_result["observed_on"] == DAY.isoformat()
+            and advance_observations.exists()
+            and advance_snapshot.exists()
+            and (advance_audits / f"{DAY.isoformat()}.json").exists()
+            and (advance_evidence / f"{DAY.isoformat()}.json").exists(),
+            "one-command official advance did not atomically publish four files",
+        )
+        checks.append("one_command_official_advance")
+        no_op_result = advance_next_official_paper(
+            advance_ledger,
+            observations_path=advance_observations,
+            snapshot_path=advance_snapshot,
+            primary_actions_path=ROOT / "research/0050_actions.csv",
+            defensive_actions_path=ROOT / "research/00719B_actions.csv",
+            bundle_root=temp / "no-op-bundles",
+            audit_dir=advance_audits,
+            evidence_dir=advance_evidence,
+            write=True,
+            fetcher=_bundle_fetcher,
+        )
+        _require(
+            no_op_result["ready"] is False
+            and no_op_result["advanced"] is False
+            and len(advance_ledger.observations)
+            == advance_result["observation_count"],
+            "one-command official advance duplicated the current date",
+        )
+        checks.append("one_command_official_advance_noop")
 
         unknown_source = temp / "unknown-action.json"
         unknown_source.write_text(
