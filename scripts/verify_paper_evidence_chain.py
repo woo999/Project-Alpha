@@ -19,6 +19,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("snapshot", type=Path)
     parser.add_argument("audit_dir", type=Path)
     parser.add_argument("evidence_dir", type=Path)
+    parser.add_argument("primary_actions", type=Path)
+    parser.add_argument("defensive_actions", type=Path)
     return parser.parse_args()
 
 
@@ -33,6 +35,8 @@ def main() -> None:
         ledger,
         audit_dir=args.audit_dir,
         evidence_dir=args.evidence_dir,
+        primary_actions_path=args.primary_actions,
+        defensive_actions_path=args.defensive_actions,
     )
     print(json.dumps(result, indent=2, sort_keys=True))
 
