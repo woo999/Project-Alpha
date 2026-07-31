@@ -8,7 +8,10 @@ from pathlib import Path
 from typing import Callable
 from urllib.error import HTTPError, URLError
 
-from project_alpha.next_official_bundle import OfficialDatesNotSynchronized
+from project_alpha.next_official_bundle import (
+    OfficialDateNotMature,
+    OfficialDatesNotSynchronized,
+)
 from project_alpha.official_paper_advance import advance_next_official_paper
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
 from project_alpha.paper_tracking import PaperLedger
@@ -49,6 +52,20 @@ def run_advance(
                     "0050": exc.primary_date,
                     "00719B": exc.defensive_date,
                 },
+                "last_observed_on": last_observed_on,
+            },
+            0,
+        )
+    except OfficialDateNotMature as exc:
+        return (
+            {
+                "mode": "paper_only_no_broker",
+                "ready": False,
+                "advanced": False,
+                "write_requested": args.write,
+                "reason": "same-day official close is not mature",
+                "official_date": exc.observed_on,
+                "available_after": exc.available_after,
                 "last_observed_on": last_observed_on,
             },
             0,
