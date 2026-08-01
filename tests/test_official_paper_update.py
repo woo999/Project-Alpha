@@ -60,6 +60,8 @@ def _ledger():
             primary_units=1845,
             defensive_units=3800,
             cash_balance=15.091,
+            turnover_today=298789.75,
+            charged_transaction_costs_today=1195.159,
         )
     )
     return result
