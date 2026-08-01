@@ -13,12 +13,18 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_published_snapshot_matches_current_ledger():
+    snapshot_path = PROJECT_ROOT / "research/paper_snapshot.json"
     ledger = load_authenticated_paper_ledger(
         PROJECT_ROOT / "research/preregistration.json",
         PROJECT_ROOT / "data/paper_observations.csv",
-        PROJECT_ROOT / "research/paper_snapshot.json",
+        snapshot_path,
     )
-    assert ledger.observations[-1].observed_on.isoformat() == "2026-07-29"
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    assert (
+        ledger.observations[-1].observed_on.isoformat()
+        == snapshot["last_observed_on"]
+    )
+    assert len(ledger.observations) == snapshot["observation_count"]
 
 
 def test_tampered_snapshot_is_rejected(tmp_path):
