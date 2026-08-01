@@ -1,0 +1,72 @@
+{
+  "candidate_id": "0050-00719B-60-40-Q",
+  "format_version": "official-paper-update-audit-v1",
+  "inputs": {
+    "action_manifest": {
+      "byte_count": 495,
+      "file_name": "manifest.json",
+      "sha256": "7733cb3e2f495b607c07bf26470b6f9494f786d7b471273ff67c93ba7b5432db"
+    },
+    "close_manifest": {
+      "byte_count": 563,
+      "file_name": "manifest.json",
+      "sha256": "a491b803f655bbf9a78820317f9d7e56fdafc4404335145456ec99fc4b171bd3"
+    },
+    "defensive_action_source": {
+      "byte_count": 51704,
+      "file_name": "00719B_official_schedule.json",
+      "sha256": "631af5475495badf77234d3a9b7df59aae5d28d6fda8d55bf13bbbcad4083842"
+    },
+    "defensive_action_verification": {
+      "byte_count": 366,
+      "file_name": "00719B_action_verification.json",
+      "sha256": "657d1bed5ab7953ddff2d571d797e8c40e617c48aab63fb961e5d57da7161f69"
+    },
+    "defensive_actions": {
+      "byte_count": 51,
+      "file_name": "00719B_actions.csv",
+      "sha256": "6d3e02857af4c4637c9bb1b4007fe05be8f5f61d2a3e44e6bd9a650a5344cdd7"
+    },
+    "defensive_close_source": {
+      "byte_count": 3978759,
+      "file_name": "00719B_official_close.json",
+      "sha256": "4eb180d80addf25b2d040766c659838960c034ff1f91ab2529dd29264d834919"
+    },
+    "primary_action_source": {
+      "byte_count": 32205,
+      "file_name": "0050_official_schedule.json",
+      "sha256": "aa30062434e6123c4cace1397984f519b3b758a107eafba47161f559a97d819a"
+    },
+    "primary_action_verification": {
+      "byte_count": 365,
+      "file_name": "0050_action_verification.json",
+      "sha256": "2f6574b85e261b8675f61d1ef4ad84eaf7eb070ee0690a8504d76ff771fa8776"
+    },
+    "primary_actions": {
+      "byte_count": 50,
+      "file_name": "0050_actions.csv",
+      "sha256": "5d27d799cdbb0dddc91e13ec623305b1774737bfd5e965ff33b0166003491c0b"
+    },
+    "primary_close_source": {
+      "byte_count": 3148418,
+      "file_name": "0050_official_close.json",
+      "sha256": "2b9f17e915addccbe9c311d0a7fe52992d61744870652b985aa59488f4ed7240"
+    }
+  },
+  "mode": "paper_only_no_broker",
+  "new_ledger_hash": "8761f4c44070d9cad009e1d40bd9101daf217fb315904f1560eb1516e62039b1",
+  "observation_count_after": 4,
+  "observation_count_before": 3,
+  "observed_on": "2026-07-31",
+  "official_bundle_manifest": {
+    "byte_count": 301,
+    "file_name": "manifest.json",
+    "sha256": "717370caca422ddea83c88ffd5e3e322f11feed1748dd539ed4f35aea3971997"
+  },
+  "prior_ledger_hash": "58c2de5980dffcdfa215d54f2d01eb01d6c1ed08eab54f339c9b35b0476d9657",
+  "safety": {
+    "broker_connected": false,
+    "orders_placed": false,
+    "real_capital_deployed": 0
+  }
+}
