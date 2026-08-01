@@ -49,6 +49,8 @@ def test_status_reports_progress_weights_and_next_rebalance():
     assert status.next_rebalance_observation == 64
     assert status.observations_until_next_rebalance == 63
     assert status.within_rebalance_tolerance is True
+    assert status.allocation_drift_outside_tolerance is False
+    assert status.rebalance_due_next_observation is False
     assert status.live_ready is False
 
 
@@ -67,3 +69,45 @@ def test_status_raises_early_drawdown_warning():
     assert status.maximum_drawdown == -0.25
     assert status.drawdown_limit_breached is True
     assert status.passed is False
+
+
+def test_drift_warning_does_not_claim_an_early_rebalance_is_due():
+    target = ledger()
+    target.append(
+        observation(
+            date(2026, 7, 28),
+            1.0,
+            turnover=100.0,
+            cost=0.4,
+        )
+    )
+    target.append(
+        PaperObservation(
+            observed_on=date(2026, 7, 29),
+            portfolio_value=160.0,
+            primary_close=2.0,
+            defensive_close=1.0,
+            primary_units=60,
+            defensive_units=40,
+            cash_balance=0.0,
+        )
+    )
+    status = build_paper_status(target)
+    assert status.allocation_drift_outside_tolerance is True
+    assert status.rebalance_due_next_observation is False
+    assert status.next_rebalance_observation == 64
+
+
+def test_status_marks_only_the_scheduled_next_observation_for_rebalance():
+    target = ledger(interval=2)
+    target.append(
+        observation(
+            date(2026, 7, 28),
+            1.0,
+            turnover=100.0,
+            cost=0.4,
+        )
+    )
+    status = build_paper_status(target)
+    assert status.rebalance_due_next_observation is True
+    assert status.next_rebalance_observation == 2
