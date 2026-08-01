@@ -55,6 +55,7 @@ from project_alpha.official_paper_update import (
     append_official_daily_mark,
 )
 from project_alpha.paper_snapshot_io import load_authenticated_paper_ledger
+from project_alpha.paper_status import build_paper_status
 from project_alpha.paper_evidence_chain import verify_paper_evidence_chain
 from project_alpha.paper_tracking import PaperLedger
 from scripts.advance_official_paper import run_advance
@@ -244,6 +245,14 @@ def main() -> None:
             "authenticated ledger boundary changed",
         )
         checks.append("authenticated_paper_ledger_loaded")
+        status = build_paper_status(ledger)
+        _require(
+            status.allocation_drift_outside_tolerance
+            and not status.rebalance_due_next_observation
+            and status.next_rebalance_observation == 64,
+            "allocation drift was confused with an early rebalance",
+        )
+        checks.append("allocation_drift_does_not_trigger_early_rebalance")
         chain = verify_paper_evidence_chain(
             ledger,
             audit_dir=ROOT / "research/audits",
