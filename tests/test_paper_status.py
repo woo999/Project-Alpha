@@ -108,6 +108,7 @@ def test_status_marks_only_the_scheduled_next_observation_for_rebalance():
             cost=0.4,
         )
     )
+    target.append(observation(date(2026, 7, 29), 1.0))
     status = build_paper_status(target)
     assert status.rebalance_due_next_observation is True
-    assert status.next_rebalance_observation == 2
+    assert status.next_rebalance_observation == 3
