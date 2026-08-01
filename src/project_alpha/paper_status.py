@@ -23,6 +23,8 @@ class PaperStatus:
     primary_weight_deviation: float
     defensive_weight_deviation: float
     within_rebalance_tolerance: bool
+    allocation_drift_outside_tolerance: bool
+    rebalance_due_next_observation: bool
     next_rebalance_observation: int
     observations_until_next_rebalance: int
     cumulative_return: float | None
@@ -78,6 +80,10 @@ def build_paper_status(ledger: PaperLedger) -> PaperStatus:
         primary_weight_deviation=primary_deviation,
         defensive_weight_deviation=defensive_deviation,
         within_rebalance_tolerance=within_tolerance,
+        allocation_drift_outside_tolerance=not within_tolerance,
+        rebalance_due_next_observation=ledger.spec.is_rebalance_observation(
+            count + 1
+        ),
         next_rebalance_observation=next_rebalance,
         observations_until_next_rebalance=next_rebalance - count,
         cumulative_return=decision.cumulative_return,
