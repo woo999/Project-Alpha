@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import json
+import math
+from datetime import date
 from pathlib import Path
+from urllib.parse import urlparse
 
+from project_alpha.official_close import official_close_for_symbol
 from project_alpha.official_paper_bundle import load_official_paper_bundle
 from project_alpha.paper_daily import load_paper_actions
 
@@ -29,6 +33,45 @@ def _audit_input(
     ):
         raise ValueError(f"official audit input is malformed: {label}")
     return evidence
+
+
+def _replayable_close_row(
+    source_path: Path,
+    *,
+    source_url: str,
+    symbol: str,
+    expected_date: date,
+    expected_close: float,
+) -> dict[str, object]:
+    """Extract the exact official row needed to replay one close."""
+    rows = json.loads(source_path.read_text(encoding="utf-8"))
+    if not isinstance(rows, list):
+        raise ValueError("official close source must be a JSON array")
+    hostname = (urlparse(source_url).hostname or "").lower()
+    if hostname == "openapi.twse.com.tw":
+        symbol_key = "Code"
+    elif hostname == "www.tpex.org.tw":
+        symbol_key = "SecuritiesCompanyCode"
+    else:
+        raise ValueError("unsupported official close source")
+    matches = [
+        row
+        for row in rows
+        if isinstance(row, dict) and str(row.get(symbol_key, "")).strip() == symbol
+    ]
+    if len(matches) != 1:
+        raise ValueError("official close replay row must be unique")
+    row = matches[0]
+    replayed = official_close_for_symbol(
+        json.dumps([row], ensure_ascii=False).encode("utf-8"),
+        source_url=source_url,
+        symbol=symbol,
+    )
+    if replayed.observed_on != expected_date or not math.isclose(
+        replayed.close, expected_close, rel_tol=0, abs_tol=1e-9
+    ):
+        raise ValueError("official close replay row does not match verified close")
+    return row
 
 
 def build_official_evidence_summary(
@@ -88,21 +131,37 @@ def build_official_evidence_summary(
     defensive_close_source = _audit_input(audit, "defensive_close_source")
     primary_action_source = _audit_input(audit, "primary_action_source")
     defensive_action_source = _audit_input(audit, "defensive_action_source")
+    primary_close_url = close_sources["0050"]["url"]
+    defensive_close_url = close_sources["00719B"]["url"]
 
     return {
-        "format_version": "official-evidence-summary-v1",
+        "format_version": "official-evidence-summary-v2",
         "mode": "paper_only_no_broker",
         "observed_on": observed_text,
         "closes": {
             "0050": {
                 "close": bundle.close.primary.close,
-                "source_url": close_sources["0050"]["url"],
+                "source_url": primary_close_url,
+                "source_row": _replayable_close_row(
+                    bundle.close.primary_source_path,
+                    source_url=primary_close_url,
+                    symbol="0050",
+                    expected_date=observed_on,
+                    expected_close=bundle.close.primary.close,
+                ),
                 "raw_byte_count": primary_close_source["byte_count"],
                 "raw_sha256": primary_close_source["sha256"],
             },
             "00719B": {
                 "close": bundle.close.defensive.close,
-                "source_url": close_sources["00719B"]["url"],
+                "source_url": defensive_close_url,
+                "source_row": _replayable_close_row(
+                    bundle.close.defensive_source_path,
+                    source_url=defensive_close_url,
+                    symbol="00719B",
+                    expected_date=observed_on,
+                    expected_close=bundle.close.defensive.close,
+                ),
                 "raw_byte_count": defensive_close_source["byte_count"],
                 "raw_sha256": defensive_close_source["sha256"],
             },
