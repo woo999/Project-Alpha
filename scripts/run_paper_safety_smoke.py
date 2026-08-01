@@ -571,13 +571,21 @@ def main() -> None:
         )
         _require(
             generated_summary["closes"]["0050"]["close"] == 98.15
+            and generated_summary["format_version"]
+            == "official-evidence-summary-v2"
+            and generated_summary["closes"]["0050"]["source_row"]["Code"]
+            == "0050"
+            and generated_summary["closes"]["00719B"]["source_row"][
+                "SecuritiesCompanyCode"
+            ]
+            == "00719B"
             and generated_summary["corporate_actions"]["0050"][
                 "event_on_observed_date"
             ]
             is False,
             "official evidence summary was not derived from the verified bundle",
         )
-        checks.append("official_evidence_summary_generated")
+        checks.append("replayable_official_evidence_summary_generated")
 
         advance_ledger = PaperLedger(
             ledger.spec,
