@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import json
 import os
 from pathlib import Path
@@ -755,7 +755,7 @@ def main() -> None:
             raise RuntimeError("wrong official action endpoint was accepted")
         checks.append("exact_action_endpoint_required")
 
-        unsafe_day = date(2026, 7, 31)
+        unsafe_day = ledger.observations[-1].observed_on + timedelta(days=1)
         _write_export(
             primary_export,
             "0050",
