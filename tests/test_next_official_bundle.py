@@ -44,6 +44,8 @@ def _ledger(last=date(2026, 7, 29)):
             primary_units=60,
             defensive_units=40,
             cash_balance=0,
+            turnover_today=100,
+            charged_transaction_costs_today=0.4,
         )
     )
     return ledger
