@@ -6,6 +6,7 @@ import json
 import math
 from pathlib import Path
 
+from project_alpha.official_close import official_close_for_symbol
 from project_alpha.paper_daily import load_paper_actions
 from project_alpha.paper_tracking import PaperLedger
 
@@ -77,6 +78,12 @@ def verify_paper_evidence_chain(
         observed_on = observation.observed_on.isoformat()
         audit = _load_json(audit_root / f"{observed_on}.json")
         summary = _load_json(evidence_root / f"{observed_on}.json")
+        summary_version = summary.get("format_version")
+        if summary_version not in {
+            "official-evidence-summary-v1",
+            "official-evidence-summary-v2",
+        }:
+            raise ValueError("unsupported official evidence summary version")
 
         prior = PaperLedger(
             ledger.spec,
@@ -155,6 +162,29 @@ def verify_paper_evidence_chain(
             observation.defensive_close,
         ):
             raise ValueError("00719B summary close does not match the paper ledger")
+
+        if summary_version == "official-evidence-summary-v2":
+            for symbol, entry, expected_close in (
+                ("0050", primary_close, observation.primary_close),
+                ("00719B", defensive_close, observation.defensive_close),
+            ):
+                source_row = entry.get("source_row")
+                source_url = entry.get("source_url")
+                if not isinstance(source_row, dict) or not isinstance(
+                    source_url, str
+                ):
+                    raise ValueError(f"{symbol} replayable close row is malformed")
+                replayed = official_close_for_symbol(
+                    json.dumps([source_row], ensure_ascii=False).encode("utf-8"),
+                    source_url=source_url,
+                    symbol=symbol,
+                )
+                if replayed.observed_on != observation.observed_on or not math.isclose(
+                    replayed.close, expected_close, rel_tol=0, abs_tol=1e-9
+                ):
+                    raise ValueError(
+                        f"{symbol} replayable close row does not match the ledger"
+                    )
 
         _verify_source(
             primary_close,
